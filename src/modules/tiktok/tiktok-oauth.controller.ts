@@ -19,6 +19,38 @@ export class TiktokOAuthController {
     private readonly tiktokTokenService: TiktokTokenService,
   ) {}
 
+  private getRedirectUri(): string {
+    const configuredRedirectUri =
+      this.configService.get<string>('TIKTOK_REDIRECT_URI');
+
+    if (configuredRedirectUri) {
+      return configuredRedirectUri;
+    }
+
+    const appBaseUrl = this.configService.get<string>(
+      'APP_BASE_URL',
+      'http://localhost:3000',
+    );
+
+    return `${appBaseUrl.replace(/\/$/, '')}/tiktok/oauth/callback`;
+  }
+
+  /**
+   * GET /tiktok/oauth/redirect-url
+   * Tra ve URL can khai bao trong TikTok Partner Center.
+   */
+  @Get('redirect-url')
+  getRedirectUrl() {
+    const redirectUri = this.getRedirectUri();
+
+    return {
+      success: true,
+      redirectUri,
+      callbackPath: '/tiktok/oauth/callback',
+      authorizeEndpoint: '/tiktok/oauth/authorize',
+    };
+  }
+
   /**
    * GET /tiktok/oauth/authorize
    * Sinh authorization URL và redirect user sang TikTok để cấp quyền.
@@ -27,7 +59,7 @@ export class TiktokOAuthController {
   @Get('authorize')
   authorize(@Res() res: Response) {
     const appKey = this.configService.get<string>('TIKTOK_APP_KEY');
-    const redirectUri = this.configService.get<string>('TIKTOK_REDIRECT_URI');
+    const redirectUri = this.getRedirectUri();
     const stateSecret = this.configService.get<string>('OAUTH_STATE_SECRET');
 
     // Sinh state ngẫu nhiên để chống CSRF
@@ -43,7 +75,7 @@ export class TiktokOAuthController {
     const authUrl =
       `https://auth.tiktok-shops.com/oauth/authorize` +
       `?app_key=${appKey}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri ?? '')}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&state=${state}`;
 
     this.logger.log(`🔗 Redirecting to TikTok OAuth: ${authUrl}`);

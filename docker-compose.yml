@@ -2,6 +2,30 @@ version: '3.8'
 
 services:
   # ============================================
+  # NestJS API Backend
+  # ============================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tiktok_lark_api
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Cấu hình lại các biến môi trường cho trùng với container name (trong Docker Network)
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/tiktok_lark_sync?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  # ============================================
   # PostgreSQL Database
   # ============================================
   postgres:

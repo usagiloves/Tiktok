@@ -36,20 +36,22 @@ export class SyncWorker extends WorkerHost {
     );
 
     try {
-      // Lấy thông tin brand từ shop
+      // Lấy thông tin brand và cipher từ shop
       const shop = await this.prisma.shop.findFirst({
         where: { shopId, platform: 'TIKTOK' },
       });
       const brand = shop?.brand || 'UNKNOWN';
+      const shopCipher = shop?.shopCipher || '';
 
       if (job.name === JOB_NAMES.SYNC_ORDER_TO_LARK && orderId) {
-        return await this.processOrder(orderId, shopId, brand, source);
+        return await this.processOrder(orderId, shopId, shopCipher, brand, source);
       }
 
       if (job.name === JOB_NAMES.SYNC_RETURN_TO_LARK && (returnId || orderId)) {
         return await this.processReturn(
           returnId || orderId || '',
           shopId,
+          shopCipher,
           brand,
           source,
         );
@@ -57,9 +59,9 @@ export class SyncWorker extends WorkerHost {
 
       this.logger.warn(`⚠️ Unknown job name: ${job.name}`);
       return { status: 'skipped', reason: 'unknown_job_name' };
-    } catch (error: unknown) {
+    } catch (error: any) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error?.message || 'Unknown error';
       this.logger.error(`❌ Job ${job.name} failed: ${errorMessage}`);
 
       // Gửi alert nếu job fail lần cuối
@@ -81,12 +83,14 @@ export class SyncWorker extends WorkerHost {
   private async processOrder(
     orderId: string,
     shopId: string,
+    shopCipher: string,
     brand: string,
     source: string,
   ) {
     // Gọi TikTok API lấy chi tiết đơn
     const orderDetail = (await this.tiktokApi.getOrderDetail(
       shopId,
+      shopCipher,
       orderId,
     )) as Record<string, unknown>;
 
@@ -111,11 +115,13 @@ export class SyncWorker extends WorkerHost {
   private async processReturn(
     returnId: string,
     shopId: string,
+    shopCipher: string,
     brand: string,
     source: string,
   ) {
     const returnDetail = (await this.tiktokApi.getReturnDetail(
       shopId,
+      shopCipher,
       returnId,
     )) as Record<string, unknown>;
 

@@ -41,19 +41,21 @@ export class ReconcileService {
     }
 
     const brand = shop.brand || 'UNKNOWN';
+    const shopCipher = shop.shopCipher || '';
     const stats = { total: 0, created: 0, updated: 0, skipped: 0, errors: 0 };
 
-    let cursor: string | undefined;
+    let pageToken: string | undefined;
     let hasMore = true;
 
     while (hasMore) {
       try {
         const result = await this.tiktokApi.getOrderList({
           shopId,
+          shopCipher,
           updateTimeFrom: fromTimestamp,
           updateTimeTo: toTimestamp,
           pageSize: 50,
-          cursor,
+          pageToken,
         });
 
         const orders = (result.orders || []) as Record<string, unknown>[];
@@ -76,8 +78,8 @@ export class ReconcileService {
           }
         }
 
-        cursor = result.nextCursor;
-        hasMore = !!cursor && orders.length > 0;
+        pageToken = result.next_page_token;
+        hasMore = !!pageToken && orders.length > 0;
       } catch (error: unknown) {
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';
@@ -117,22 +119,24 @@ export class ReconcileService {
     }
 
     const brand = shop.brand || 'UNKNOWN';
+    const shopCipher = shop.shopCipher || '';
     const stats = { total: 0, created: 0, updated: 0, skipped: 0, errors: 0 };
 
-    let cursor: string | undefined;
+    let pageToken: string | undefined;
     let hasMore = true;
 
     while (hasMore) {
       try {
         const result = await this.tiktokApi.getReturnList({
           shopId,
+          shopCipher,
           updateTimeFrom: fromTimestamp,
           updateTimeTo: toTimestamp,
           pageSize: 50,
-          cursor,
+          pageToken,
         });
 
-        const returns = (result.return_refunds || []) as Record<
+        const returns = (result.returns || result.return_refunds || result.return_orders || []) as Record<
           string,
           unknown
         >[];
@@ -158,8 +162,8 @@ export class ReconcileService {
           }
         }
 
-        cursor = result.nextCursor;
-        hasMore = !!cursor && returns.length > 0;
+        pageToken = result.next_page_token;
+        hasMore = !!pageToken && returns.length > 0;
       } catch (error: unknown) {
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';

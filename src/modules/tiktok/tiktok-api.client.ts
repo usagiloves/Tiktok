@@ -9,21 +9,27 @@ interface TiktokApiParams {
   [key: string]: string | number | boolean | undefined;
 }
 
-interface OrderListParams {
+export interface OrderListParams {
   shopId: string;
+  shopCipher: string;
   updateTimeFrom?: number; // unix timestamp seconds
   updateTimeTo?: number;
+  createTimeFrom?: number;
+  createTimeTo?: number;
   pageSize?: number;
-  cursor?: string;
+  pageToken?: string;
   orderStatus?: string;
 }
 
-interface ReturnListParams {
+export interface ReturnListParams {
   shopId: string;
+  shopCipher: string;
   updateTimeFrom?: number;
   updateTimeTo?: number;
+  createTimeFrom?: number;
+  createTimeTo?: number;
   pageSize?: number;
-  cursor?: string;
+  pageToken?: string;
 }
 
 @Injectable()
@@ -43,7 +49,6 @@ export class TiktokApiClient {
 
   /**
    * Tạo chữ ký cho TikTok API request.
-   * TikTok yêu cầu sign request bằng app_secret.
    */
   private generateSignature(
     path: string,
@@ -93,22 +98,24 @@ export class TiktokApiClient {
     const allParams: TiktokApiParams = {
       app_key: appKey,
       timestamp,
-      shop_id: shopId,
       ...params,
     };
 
     const sign = this.generateSignature(path, allParams, body);
     allParams.sign = sign;
-    allParams.access_token = accessToken;
 
     const url = `${this.baseUrl}${path}`;
+    const headers = {
+      'content-type': 'application/json',
+      'x-tts-access-token': accessToken,
+    };
 
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         const response = await firstValueFrom(
           method === 'GET'
-            ? this.httpService.get(url, { params: allParams })
-            : this.httpService.post(url, body, { params: allParams }),
+            ? this.httpService.get(url, { params: allParams, headers })
+            : this.httpService.post(url, body, { params: allParams, headers }),
         );
 
         const responseData = response.data;
@@ -119,9 +126,9 @@ export class TiktokApiClient {
         }
 
         return responseData.data as T;
-      } catch (error: unknown) {
+      } catch (error: any) {
         const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
+          error?.response?.data?.message || error.message || 'Unknown error';
 
         if (attempt < retries) {
           const backoff = Math.pow(2, attempt) * 1000;
@@ -142,37 +149,62 @@ export class TiktokApiClient {
   }
 
   // ============================================
+  // Authorization APIs
+  // ============================================
+
+  /**
+   * Lấy danh sách shops đã authorize để lấy shop_cipher.
+   */
+  async getAuthorizedShops(shopId: string): Promise<{ shops: any[] }> {
+    return this.callApi<{ shops: any[] }>(
+      'GET',
+      '/authorization/202309/shops',
+      shopId,
+    );
+  }
+
+  // ============================================
   // Order APIs
   // ============================================
 
   /**
-   * Lấy danh sách đơn hàng theo khoảng thời gian update.
+   * Lấy danh sách đơn hàng theo khoảng thời gian update/create.
    */
   async getOrderList(
     params: OrderListParams,
-  ): Promise<{ orders: unknown[]; nextCursor?: string; totalCount?: number }> {
+  ): Promise<{ orders: any[]; next_page_token?: string; total_count?: number }> {
     const queryParams: TiktokApiParams = {
+      shop_cipher: params.shopCipher,
       page_size: params.pageSize || 50,
     };
 
+    if (params.pageToken) {
+      queryParams.page_token = params.pageToken;
+    }
+
+    const body: Record<string, any> = {};
+
     if (params.updateTimeFrom) {
-      queryParams.update_time_from = params.updateTimeFrom;
+      body.update_time_ge = params.updateTimeFrom;
     }
     if (params.updateTimeTo) {
-      queryParams.update_time_to = params.updateTimeTo;
+      body.update_time_lt = params.updateTimeTo;
     }
-    if (params.cursor) {
-      queryParams.cursor = params.cursor;
+    if (params.createTimeFrom) {
+      body.create_time_ge = params.createTimeFrom;
+    }
+    if (params.createTimeTo) {
+      body.create_time_lt = params.createTimeTo;
     }
     if (params.orderStatus) {
-      queryParams.order_status = params.orderStatus;
+      body.order_status = params.orderStatus;
     }
 
     return this.callApi<{
-      orders: unknown[];
-      nextCursor?: string;
-      totalCount?: number;
-    }>('POST', '/api/orders/search', params.shopId, {}, queryParams);
+      orders: any[];
+      next_page_token?: string;
+      total_count?: number;
+    }>('POST', '/order/202309/orders/search', params.shopId, queryParams, body);
   }
 
   /**
@@ -180,14 +212,14 @@ export class TiktokApiClient {
    */
   async getOrderDetail(
     shopId: string,
+    shopCipher: string,
     orderId: string,
-  ): Promise<unknown> {
-    return this.callApi<unknown>(
-      'POST',
-      '/api/orders/detail/query',
+  ): Promise<{ orders: any[] }> {
+    return this.callApi<{ orders: any[] }>(
+      'GET',
+      '/order/202309/orders',
       shopId,
-      {},
-      { order_id_list: [orderId] },
+      { shop_cipher: shopCipher, ids: orderId },
     );
   }
 
@@ -201,29 +233,49 @@ export class TiktokApiClient {
   async getReturnList(
     params: ReturnListParams,
   ): Promise<{
-    return_refunds: unknown[];
-    nextCursor?: string;
-    totalCount?: number;
+    returns?: any[];
+    return_refunds?: any[];
+    return_orders?: any[];
+    next_page_token?: string;
+    total_count?: number;
   }> {
     const queryParams: TiktokApiParams = {
+      shop_cipher: params.shopCipher,
       page_size: params.pageSize || 50,
     };
 
+    if (params.pageToken) {
+      queryParams.page_token = params.pageToken;
+    }
+
+    const body: Record<string, any> = {};
+
     if (params.updateTimeFrom) {
-      queryParams.update_time_from = params.updateTimeFrom;
+      body.update_time_ge = params.updateTimeFrom;
     }
     if (params.updateTimeTo) {
-      queryParams.update_time_to = params.updateTimeTo;
+      body.update_time_lt = params.updateTimeTo;
     }
-    if (params.cursor) {
-      queryParams.cursor = params.cursor;
+    if (params.createTimeFrom) {
+      body.create_time_ge = params.createTimeFrom;
+    }
+    if (params.createTimeTo) {
+      body.create_time_lt = params.createTimeTo;
     }
 
     return this.callApi<{
-      return_refunds: unknown[];
-      nextCursor?: string;
-      totalCount?: number;
-    }>('GET', '/api/reverse/list', params.shopId, queryParams);
+      returns?: any[];
+      return_refunds?: any[];
+      return_orders?: any[];
+      next_page_token?: string;
+      total_count?: number;
+    }>(
+      'POST',
+      '/return_refund/202309/returns/search',
+      params.shopId,
+      queryParams,
+      body,
+    );
   }
 
   /**
@@ -231,41 +283,24 @@ export class TiktokApiClient {
    */
   async getReturnDetail(
     shopId: string,
+    shopCipher: string,
     returnId: string,
-  ): Promise<unknown> {
-    return this.callApi<unknown>(
+  ): Promise<any> {
+    return this.callApi<any>(
       'GET',
-      '/api/reverse/detail',
+      `/return_refund/202309/returns/${returnId}`, // Note: this path might be invalid as per preview script 404
       shopId,
-      { reverse_order_id: returnId },
+      { shop_cipher: shopCipher },
     );
   }
 
   /**
-   * Lấy danh sách đơn hủy.
+   * Lấy danh sách đơn hủy (nếu còn dùng riêng rẽ, nếu không có thể bỏ qua).
    */
   async getCancelList(
     params: ReturnListParams,
-  ): Promise<{ cancellations: unknown[]; nextCursor?: string }> {
-    const queryParams: TiktokApiParams = {
-      page_size: params.pageSize || 50,
-    };
-
-    if (params.updateTimeFrom) {
-      queryParams.update_time_from = params.updateTimeFrom;
-    }
-    if (params.updateTimeTo) {
-      queryParams.update_time_to = params.updateTimeTo;
-    }
-    if (params.cursor) {
-      queryParams.cursor = params.cursor;
-    }
-
-    return this.callApi<{ cancellations: unknown[]; nextCursor?: string }>(
-      'GET',
-      '/api/reverse/cancel/list',
-      params.shopId,
-      queryParams,
-    );
+  ): Promise<{ cancellations: any[]; nextCursor?: string }> {
+    this.logger.warn('getCancelList is legacy API and may not be supported in 202309');
+    throw new Error('Not implemented for 202309 API. Use order search or return search.');
   }
 }

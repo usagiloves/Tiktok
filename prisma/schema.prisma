@@ -15,13 +15,14 @@ datasource db {
 model Shop {
   id        Int      @id @default(autoincrement())
   platform  String   @db.VarChar(50)  // TIKTOK, SHOPEE
-  shopId    String   @map("shop_id") @db.VarChar(100)
-  shopName  String?  @map("shop_name") @db.VarChar(255)
-  brand     String?  @db.VarChar(100) // GOODFIT, CWELL
-  isActive  Boolean  @default(true) @map("is_active")
-  timezone  String   @default("Asia/Ho_Chi_Minh") @db.VarChar(50)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  shopId     String   @map("shop_id") @db.VarChar(100)
+  shopName   String?  @map("shop_name") @db.VarChar(255)
+  brand      String?  @db.VarChar(100) // GOODFIT, CWELL
+  isActive   Boolean  @default(true) @map("is_active")
+  timezone   String   @default("Asia/Ho_Chi_Minh") @db.VarChar(50)
+  shopCipher String?  @map("shop_cipher") @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   @@unique([platform, shopId])
   @@map("shops")

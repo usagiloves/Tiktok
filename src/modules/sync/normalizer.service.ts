@@ -26,6 +26,32 @@ export class NormalizerService {
   constructor(private readonly statusMapper: StatusMapperService) {}
 
   // ============================================
+  // Utility
+  // ============================================
+
+  /**
+   * Format Date thành dạng string chuẩn của Lark (YYYY/MM/DD HH:mm) theo giờ VN
+   */
+  private formatLarkDateTime(date: Date | null): string {
+    if (!date) return '';
+
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(date);
+
+    const values = Object.fromEntries(
+      parts.map((part) => [part.type, part.value]),
+    );
+    return `${values.year}/${values.month}/${values.day} ${values.hour}:${values.minute}`;
+  }
+
+  // ============================================
   // Tạo sync_key chống trùng
   // ============================================
 
@@ -101,14 +127,15 @@ export class NormalizerService {
       lastTiktokUpdateTime: lastUpdateTime,
       systemNote,
       larkFields: {
+        'Ngày về kho': '',
         'Kênh bán': 'TikTok',
         'Thương hiệu': brand,
-        'Ngày tạo đơn': orderCreatedAt ? orderCreatedAt.getTime() : null,
+        'Ngày tạo đơn': this.formatLarkDateTime(orderCreatedAt),
         'Mã đơn gốc': orderId,
         'Mã đơn trả': '',
         'Loại yêu cầu': this.statusMapper.mapRequestType(REQUEST_TYPES.ORDER),
         'Tình trạng xử lý': internalStatus,
-        'Khiếu nại': isComplaint,
+        'Khiếu nại': isComplaint ? 'Có' : 'Không',
         'Ghi chú hệ thống': systemNote,
         sync_key: syncKey,
         platform: PLATFORMS.TIKTOK,
@@ -196,17 +223,15 @@ export class NormalizerService {
       lastTiktokUpdateTime: lastUpdateTime,
       systemNote,
       larkFields: {
+        'Ngày về kho': this.formatLarkDateTime(warehouseReceivedAt),
         'Kênh bán': 'TikTok',
         'Thương hiệu': brand,
-        'Ngày tạo đơn': orderCreatedAt ? orderCreatedAt.getTime() : null,
-        'Ngày về kho': warehouseReceivedAt
-          ? warehouseReceivedAt.getTime()
-          : null,
+        'Ngày tạo đơn': this.formatLarkDateTime(orderCreatedAt),
         'Mã đơn gốc': orderId,
         'Mã đơn trả': requestId,
         'Loại yêu cầu': typeLabel,
         'Tình trạng xử lý': internalStatus,
-        'Khiếu nại': isComplaint,
+        'Khiếu nại': isComplaint ? 'Có' : 'Không',
         'Ghi chú hệ thống': systemNote,
         sync_key: syncKey,
         platform: PLATFORMS.TIKTOK,
