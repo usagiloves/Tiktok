@@ -1,98 +1,112 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# TikTok Shop → Lark Base Automation
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Hệ thống tự động đồng bộ dữ liệu đơn hàng, hoàn trả, hủy đơn, và khiếu nại từ TikTok Shop vào bảng quản lý CSKH trên Lark Base.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Tính Năng Chính
 
-## Description
+- **Đồng bộ tự động**: Kéo dữ liệu đơn hàng mới và trạng thái đơn thay đổi liên tục.
+- **Webhook realtime**: Lắng nghe và cập nhật ngay khi trạng thái đơn (Order) hoặc yêu cầu hoàn/trả (Return/Refund) thay đổi.
+- **Cron đối soát**: Có 4 lịch đối soát tự động chạy ngầm (10 phút, 30 phút, hàng ngày, hàng tuần) để đảm bảo không bị miss dữ liệu nếu webhook lỗi.
+- **Bảo vệ dữ liệu**: Chỉ cập nhật các cột hệ thống. Các cột do team CSKH nhập tay (ví dụ: Người phụ trách, Ghi chú CSKH, Kết quả xử lý nội bộ) sẽ được giữ nguyên không bị ghi đè.
+- **Cảnh báo lỗi**: Tự động bắn thông báo lỗi qua Lark Bot nếu quá trình sync bị lỗi nhiều lần.
+- **Admin Dashboard**: Cung cấp các API thủ công để admin có thể retry đơn lỗi hoặc đối soát lại (reconcile) theo khoảng ngày.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
 
-## Project setup
+## Cấu Trúc Hệ Thống (Tech Stack)
 
+- **Backend Framework**: [NestJS](https://nestjs.com/) (Node.js + TypeScript)
+- **Database**: PostgreSQL
+- **Queue/Worker**: Redis + [BullMQ](https://docs.bullmq.io/)
+- **ORM**: [Prisma v7](https://www.prisma.io/)
+- **Deployment**: Docker + Docker Compose
+
+---
+
+## Yêu Cầu Cài Đặt (Prerequisites)
+
+1. [Node.js](https://nodejs.org/) (Khuyến nghị bản LTS v18 hoặc v20)
+2. [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Hoặc cài sẵn PostgreSQL và Redis riêng biệt)
+3. Cài đặt biến môi trường toàn cầu (Tùy chọn: `npm i -g @nestjs/cli prisma`)
+
+---
+
+## Hướng Dẫn Cài Đặt & Chạy Local
+
+### Bước 1: Cài đặt thư viện
+Mở terminal tại thư mục gốc của project:
 ```bash
-$ npm install
+npm install
 ```
 
-## Compile and run the project
-
+### Bước 2: Khởi động Database (PostgreSQL + Redis)
+Nếu bạn đã cài Docker Desktop, chạy lệnh sau để khởi tạo database:
 ```bash
-# development
-$ npm run start
+docker compose up -d
+```
+*(Nếu bạn không dùng Docker, vui lòng cài PostgreSQL và Redis thủ công và đổi URI trong file `.env`)*
 
-# watch mode
-$ npm run start:dev
+### Bước 3: Cấu hình biến môi trường
+File `.env` đã được cấu hình mặc định sẵn để kết nối local DB. 
+Tuy nhiên, để test thực tế bạn cần thay các giá trị của **TikTok** và **Lark** bằng API key thật:
+- `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`
+- `LARK_APP_ID`, `LARK_APP_SECRET`, `LARK_BASE_APP_TOKEN`, `LARK_TABLE_ID_CSKH`
 
-# production mode
-$ npm run start:prod
+### Bước 4: Khởi tạo Database Schema (Migration)
+Chạy lệnh Prisma để tạo các bảng trong PostgreSQL:
+```bash
+npx prisma migrate dev --name init
 ```
 
-## Run tests
-
+### Bước 5: Chạy Server
+Khởi động hệ thống ở chế độ watch (hot-reload):
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run start:dev
 ```
+Server sẽ chạy ở địa chỉ `http://localhost:3000`
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Hướng Dẫn Test OAuth (Cấp quyền shop TikTok)
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+TikTok yêu cầu Callback URL (`TIKTOK_REDIRECT_URI`) phải là một đường dẫn public HTTPS. Để test local, bạn cần dùng **Ngrok**.
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+1. Cài đặt và chạy ngrok ở port 3000:
+   ```bash
+   ngrok http 3000
+   ```
+2. Copy URL của ngrok (ví dụ: `https://abcd.ngrok-free.app`).
+3. Mở file `.env`, cập nhật biến môi trường:
+   ```env
+   TIKTOK_REDIRECT_URI=https://abcd.ngrok-free.app/tiktok/oauth/callback
+   ```
+4. Đăng nhập vào [TikTok Partner Center](https://partner.tiktokshop.com/), cài đặt App của bạn và cập nhật Redirect URL giống với URL ngrok ở trên.
+5. Mở trình duyệt và truy cập vào link:
+   ```text
+   http://localhost:3000/tiktok/oauth/authorize
+   ```
+   Hệ thống sẽ dẫn bạn sang TikTok để cấp quyền, sau khi chấp nhận, thông tin Token sẽ được lưu tự động vào Database.
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Resources
+## Các API Endpoints Quan Trọng
 
-Check out a few resources that may come in handy when working with NestJS:
+| Method | Endpoint | Chức năng |
+|--------|----------|-----------|
+| `GET`  | `/health` | Kiểm tra trạng thái server đang hoạt động |
+| `GET`  | `/tiktok/oauth/authorize` | Lấy link cài đặt ủy quyền shop |
+| `POST` | `/admin/sync/retry` | Retry đồng bộ lại 1 đơn bị lỗi qua `sync_key` |
+| `POST` | `/admin/reconcile/orders` | Đối soát lại đơn hàng theo khoảng ngày `from`, `to` |
+| `POST` | `/admin/reconcile/returns`| Đối soát lại hoàn/trả theo khoảng ngày `from`, `to` |
+| `GET`  | `/admin/dashboard` | Dashboard thống kê đơn và lỗi trong ngày |
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+---
 
-## Support
+## Cấu trúc Database (6 bảng chính)
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+1. `shops`: Chứa danh sách các shop cần đồng bộ và thương hiệu (brand) tương ứng.
+2. `tiktok_tokens`: Lưu access_token và refresh_token mã hóa (hệ thống tự auto-refresh).
+3. `normalized_requests`: Dữ liệu thô TikTok đã được chuyển đổi thành chuẩn nội bộ (lưu cả đơn hàng, hoàn trả, khiếu nại).
+4. `lark_records`: Bảng map khóa đồng bộ `sync_key` với `record_id` trên Lark, phục vụ quá trình cập nhật (upsert).
+5. `sync_logs`: Lưu toàn bộ lịch sử (log) của quá trình tạo mới, cập nhật, skip hoặc lỗi.
+6. `webhook_events`: Lưu lại payload raw của mọi webhook TikTok gửi sang để kiểm tra (audit) khi cần thiết.
