@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// Bảng cấu hình shop
+// ============================================
+model Shop {
+  id        Int      @id @default(autoincrement())
+  platform  String   @db.VarChar(50)  // TIKTOK, SHOPEE
+  shopId    String   @map("shop_id") @db.VarChar(100)
+  shopName  String?  @map("shop_name") @db.VarChar(255)
+  brand     String?  @db.VarChar(100) // GOODFIT, CWELL
+  isActive  Boolean  @default(true) @map("is_active")
+  timezone  String   @default("Asia/Ho_Chi_Minh") @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([platform, shopId])
+  @@map("shops")
+}
+
+// ============================================
+// Token TikTok (mã hóa)
+// ============================================
+model TiktokToken {
+  id                     Int       @id @default(autoincrement())
+  shopId                 String    @unique @map("shop_id") @db.VarChar(100)
+  accessToken            String    @map("access_token") @db.Text
+  refreshToken           String    @map("refresh_token") @db.Text
+  accessTokenExpiredAt   DateTime? @map("access_token_expired_at")
+  refreshTokenExpiredAt  DateTime? @map("refresh_token_expired_at")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  @@map("tiktok_tokens")
+}
+
+// ============================================
+// Dữ liệu đơn hàng / yêu cầu đã normalize
+// ============================================
+model NormalizedRequest {
+  id                    Int       @id @default(autoincrement())
+  syncKey               String    @unique @map("sync_key") @db.VarChar(500)
+  platform              String    @db.VarChar(50)
+  shopId                String    @map("shop_id") @db.VarChar(100)
+  brand                 String?   @db.VarChar(100)
+  orderId               String    @map("order_id") @db.VarChar(100)
+  requestId             String?   @map("request_id") @db.VarChar(100)
+  requestType           String?   @map("request_type") @db.VarChar(50) // ORDER, RETURN, REFUND, CANCEL, COMPLAINT
+  internalStatus        String?   @map("internal_status") @db.VarChar(100)
+  isComplaint           Boolean   @default(false) @map("is_complaint")
+  orderCreatedAt        DateTime? @map("order_created_at")
+  warehouseReceivedAt   DateTime? @map("warehouse_received_at")
+  lastTiktokUpdateTime  DateTime? @map("last_tiktok_update_time")
+  payload               Json?     @db.JsonB
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@index([platform, shopId])
+  @@index([orderId])
+  @@index([requestType])
+  @@index([lastTiktokUpdateTime])
+  @@map("normalized_requests")
+}
+
+// ============================================
+// Mapping record Lark
+// ============================================
+model LarkRecord {
+  id            Int       @id @default(autoincrement())
+  syncKey       String    @unique @map("sync_key") @db.VarChar(500)
+  larkAppToken  String    @map("lark_app_token") @db.VarChar(255)
+  larkTableId   String    @map("lark_table_id") @db.VarChar(255)
+  larkRecordId  String    @map("lark_record_id") @db.VarChar(255)
+  lastSyncedAt  DateTime? @map("last_synced_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("lark_records")
+}
+
+// ============================================
+// Log đồng bộ
+// ============================================
+model SyncLog {
+  id              Int      @id @default(autoincrement())
+  traceId         String?  @map("trace_id") @db.VarChar(100)
+  syncKey         String?  @map("sync_key") @db.VarChar(500)
+  action          String?  @db.VarChar(50)  // CREATE, UPDATE, SKIP, ERROR
+  source          String?  @db.VarChar(50)  // WEBHOOK, CRON, MANUAL_RETRY
+  status          String?  @db.VarChar(50)  // SUCCESS, FAILED
+  errorMessage    String?  @map("error_message") @db.Text
+  payloadSnapshot Json?    @map("payload_snapshot") @db.JsonB
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([syncKey])
+  @@index([status])
+  @@index([createdAt])
+  @@map("sync_logs")
+}
+
+// ============================================
+// Webhook events (raw payload audit)
+// ============================================
+model WebhookEvent {
+  id             Int       @id @default(autoincrement())
+  platform       String    @db.VarChar(50)
+  eventType      String?   @map("event_type") @db.VarChar(100)
+  eventId        String?   @map("event_id") @db.VarChar(255)
+  shopId         String?   @map("shop_id") @db.VarChar(100)
+  orderId        String?   @map("order_id") @db.VarChar(100)
+  rawPayload     Json?     @map("raw_payload") @db.JsonB
+  signatureValid Boolean?  @map("signature_valid")
+  processed      Boolean   @default(false)
+  processedAt    DateTime? @map("processed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@unique([platform, eventId])
+  @@index([processed])
+  @@map("webhook_events")
+}
