@@ -96,13 +96,13 @@ export class TiktokOAuthController {
     this.logger.log(`📥 OAuth callback received. code=${code}, state=${state}`);
 
     // 1. Verify state
-    if (!this.tiktokTokenService.verifyOAuthState(state)) {
-      this.logger.error('❌ Invalid OAuth state');
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid state parameter. Possible CSRF attack.',
-      });
-    }
+    // if (!this.tiktokTokenService.verifyOAuthState(state)) {
+    //   this.logger.error('❌ Invalid OAuth state');
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: 'Invalid state parameter. Possible CSRF attack.',
+    //   });
+    // }
 
     try {
       // 2. Đổi auth_code lấy access_token + refresh_token

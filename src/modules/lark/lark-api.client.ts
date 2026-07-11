@@ -109,6 +109,63 @@ export class LarkApiClient {
   }
 
   /**
+   * Tìm nhiều records theo một danh sách các giá trị.
+   * Dùng operator: 'in' để tìm nhiều sync_key cùng lúc.
+   */
+  async batchSearchRecords(
+    appToken: string,
+    tableId: string,
+    fieldName: string,
+    values: string[],
+  ): Promise<{ items: Array<{ record_id: string; fields: Record<string, unknown> }> }> {
+    if (values.length === 0) return { items: [] };
+
+    const headers = await this.getHeaders();
+    let allItems: Array<{ record_id: string; fields: Record<string, unknown> }> = [];
+    let pageToken = '';
+    let hasMore = true;
+
+    // Lark bitable search limit is 500 per page
+    while (hasMore) {
+      const response = await firstValueFrom(
+        this.httpService.post(
+          `${this.baseUrl}/bitable/v1/apps/${appToken}/tables/${tableId}/records/search${pageToken ? `?page_token=${pageToken}` : ''}`,
+          {
+            filter: {
+              conjunction: 'and',
+              conditions: [
+                {
+                  field_name: fieldName,
+                  operator: 'in',
+                  value: values,
+                },
+              ],
+            },
+            page_size: 500, // Max page size
+          },
+          { headers },
+        ),
+      );
+
+      if (response.data?.code !== 0) {
+        throw new Error(
+          `Lark batch search failed: ${JSON.stringify(response.data)}`,
+        );
+      }
+
+      const data = response.data.data || {};
+      if (data.items) {
+        allItems = allItems.concat(data.items);
+      }
+
+      hasMore = data.has_more;
+      pageToken = data.page_token;
+    }
+
+    return { items: allItems };
+  }
+
+  /**
    * Tạo record mới.
    */
   async createRecord(

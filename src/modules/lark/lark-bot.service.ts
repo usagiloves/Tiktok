@@ -71,6 +71,7 @@ export class LarkBotService {
    * Gửi thông báo sync thành công (tùy chọn, dùng cho daily summary).
    */
   async sendSummary(params: {
+    jobName: string;
     date: string;
     totalSynced: number;
     totalCreated: number;
@@ -81,10 +82,10 @@ export class LarkBotService {
     if (!webhookUrl) return;
 
     const content = [
-      `📊 **BÁO CÁO SYNC TIKTOK → LARK**`,
+      `📊 **BÁO CÁO ĐỒNG BỘ: ${params.jobName.toUpperCase()}**`,
       '',
-      `📅 Ngày: ${params.date}`,
-      `✅ Tổng đã sync: ${params.totalSynced}`,
+      `📅 Thời gian: ${params.date}`,
+      `✅ Tổng đã fetch/sync: ${params.totalSynced}`,
       `➕ Tạo mới: ${params.totalCreated}`,
       `🔄 Cập nhật: ${params.totalUpdated}`,
       `❌ Lỗi: ${params.totalFailed}`,

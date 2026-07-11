@@ -16,6 +16,7 @@ model Shop {
   id        Int      @id @default(autoincrement())
   platform  String   @db.VarChar(50)  // TIKTOK, SHOPEE
   shopId     String   @map("shop_id") @db.VarChar(100)
+  shopCode   String?  @map("shop_code") @db.VarChar(100)
   shopName   String?  @map("shop_name") @db.VarChar(255)
   brand      String?  @db.VarChar(100) // GOODFIT, CWELL
   isActive   Boolean  @default(true) @map("is_active")
@@ -127,4 +128,20 @@ model WebhookEvent {
   @@unique([platform, eventId])
   @@index([processed])
   @@map("webhook_events")
+}
+
+// ============================================
+// Token Shopee
+// ============================================
+model ShopeeToken {
+  id                     Int       @id @default(autoincrement())
+  shopId                 String    @unique @map("shop_id") @db.VarChar(100)
+  accessToken            String    @map("access_token") @db.Text
+  refreshToken           String    @map("refresh_token") @db.Text
+  accessTokenExpiredAt   DateTime? @map("access_token_expired_at")
+  refreshTokenExpiredAt  DateTime? @map("refresh_token_expired_at")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  @@map("shopee_tokens")
 }

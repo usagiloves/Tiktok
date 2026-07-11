@@ -1,0 +1,99 @@
+{
+  "request_id": "e3e3e7f3563e6384880f2f44a8ed9e00:0300006ebfe79416:0200007152788636",
+  "error": "",
+  "message": "",
+  "response": {
+    "image": [
+      "http://mms.img.susercontent.com/sg-11134004-7qvem-lh9t0b6m7x2n09",
+      "http://mms.img.susercontent.com/sg-11134004-7qvdc-lh9t0gkkc3fo91"
+    ],
+    "buyer_videos": [],
+    "reason": "DIFFERENT_DESCRIPTION",
+    "text_reason": "Quạt không tích điện ",
+    "reassessed_request_reason": "",
+    "return_sn": "2305270RKKMVHFD",
+    "refund_amount": 91050,
+    "currency": "VND",
+    "create_time": 1685146495,
+    "update_time": 1685635190,
+    "status": "REFUND_PAID",
+    "due_date": 1685319294,
+    "tracking_number": "811058194749",
+    "needs_logistics": true,
+    "amount_before_discount": 99000,
+    "user": {
+      "username": "hat_cat_36",
+      "email": "********vl@gmail.com",
+      "portrait": "http://mms.img.susercontent.com/30b4fdd42ee1c73422f988e78542f20b"
+    },
+    "item": [
+      {
+        "item_id": 23441609235,
+        "model_id": 216734064811,
+        "name": "Quạt mini để bàn, Quạt tích điện để bàn, văn phòng, treo tường CWELL Có Đèn Led, 3 tốc độ gió siêu mát, bảo hành 6 tháng",
+        "images": [
+          "http://mms.img.susercontent.com/vn-11134207-7qukw-lgfxp63mncvrca"
+        ],
+        "amount": 1,
+        "item_price": 99000,
+        "is_add_on_deal": true,
+        "is_main_item": true,
+        "item_sku": "C202F",
+        "variation_sku": "C201F",
+        "add_on_deal_id": 207899752,
+        "hot_listing_item": false
+      }
+    ],
+    "order_sn": "230524H8CCH1Y9",
+    "return_ship_due_date": 1685319327,
+    "return_seller_due_date": 1685787841,
+    "activity": [],
+    "seller_proof": {
+      "seller_proof_status": "NOT_NEEDED",
+      "seller_evidence_deadline": null
+    },
+    "seller_compensation": {
+      "seller_compensation_status": "NOT_REQUIRED",
+      "seller_compensation_due_date": 1685709932,
+      "compensation_amount": null
+    },
+    "negotiation": {
+      "negotiation_status": "",
+      "latest_solution": "",
+      "latest_offer_amount": null,
+      "latest_offer_creator": "",
+      "counter_limit": null,
+      "offer_due_date": null
+    },
+    "logistics_status": "LOGISTICS_DELIVERY_DONE",
+    "reverse_logistics_status": "LOGISTICS_DELIVERY_DONE",
+    "return_pickup_address": {
+      "address": "****",
+      "name": "****",
+      "phone": "****",
+      "town": "****",
+      "district": "****",
+      "city": "****",
+      "state": "****",
+      "region": "****",
+      "zipcode": "****"
+    },
+    "return_address": {
+      "whs_id": ""
+    },
+    "virtual_contact_number": "",
+    "package_query_number": "",
+    "hot_listing_order": false,
+    "return_refund_type": "RRBOC",
+    "return_solution": 0,
+    "return_refund_request_type": 0,
+    "validation_type": "seller_validation",
+    "is_seller_arrange": false,
+    "is_shipping_proof_mandatory": false,
+    "has_uploaded_shipping_proof": false,
+    "is_reverse_logistics_channel_integrated": true,
+    "reverse_logistics_channel_name": "J&T Express",
+    "is_arrived_at_warehouse": 0,
+    "follow_up_action_list": null
+  }
+}

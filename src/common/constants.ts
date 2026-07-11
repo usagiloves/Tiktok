@@ -63,3 +63,9 @@ export const SYNC_STATUSES = {
   SUCCESS: 'SUCCESS',
   FAILED: 'FAILED',
 } as const;
+
+// ============================================
+// Ngày tối thiểu để sync lên Lark
+// Chỉ đồng bộ đơn hàng từ ngày này trở đi.
+// ============================================
+export const SYNC_MIN_DATE = new Date('2026-06-20T00:00:00+07:00');

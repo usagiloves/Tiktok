@@ -11,8 +11,11 @@ interface SyncJobData {
   orderId?: string;
   returnId?: string;
   shopId: string;
-  eventType: string;
+  eventType?: string;
   source: string;
+  isFailedDelivery?: boolean;
+  warehouseReceivedAtMs?: number;
+  isHardCut?: boolean;
 }
 
 @Processor(QUEUE_NAMES.SYNC_ORDER)
@@ -41,16 +44,18 @@ export class SyncWorker extends WorkerHost {
         where: { shopId, platform: 'TIKTOK' },
       });
       const brand = shop?.brand || 'UNKNOWN';
+      const shopCode = shop?.shopCode || null;
       const shopCipher = shop?.shopCipher || '';
 
       if (job.name === JOB_NAMES.SYNC_ORDER_TO_LARK && orderId) {
-        return await this.processOrder(orderId, shopId, shopCipher, brand, source);
+        return await this.processOrder(job.data, shopCode, shopCipher, brand);
       }
 
       if (job.name === JOB_NAMES.SYNC_RETURN_TO_LARK && (returnId || orderId)) {
         return await this.processReturn(
           returnId || orderId || '',
           shopId,
+          shopCode,
           shopCipher,
           brand,
           source,
@@ -81,29 +86,50 @@ export class SyncWorker extends WorkerHost {
   }
 
   private async processOrder(
-    orderId: string,
-    shopId: string,
+    jobData: SyncJobData,
+    shopCode: string | null,
     shopCipher: string,
     brand: string,
-    source: string,
   ) {
-    // Gọi TikTok API lấy chi tiết đơn
-    const orderDetail = (await this.tiktokApi.getOrderDetail(
-      shopId,
-      shopCipher,
-      orderId,
-    )) as Record<string, unknown>;
+    const { orderId, shopId, source, isFailedDelivery, warehouseReceivedAtMs, isHardCut } = jobData;
+    if (!orderId) return { status: 'skipped', reason: 'missing_order_id' };
 
-    // Có thể trả về list orders
-    const orders = (orderDetail.orders ||
-      orderDetail.order_list || [orderDetail]) as Record<string, unknown>[];
+    let orders: any[] = [];
+    
+    // Nếu là Hard Cut, không gọi API nữa vì đằng nào cũng lỗi
+    if (isHardCut) {
+      this.logger.log(`[Hard Cut] Constructing fake payload for ${orderId} instead of fetching.`);
+      const fakeOrder = {
+        order_id: orderId,
+        _is_failed_delivery: true,
+        _jt_warehouse_received_at: warehouseReceivedAtMs || Date.now()
+      };
+      orders = [fakeOrder];
+    } else {
+      // Gọi TikTok API lấy chi tiết đơn
+      const orderDetail = (await this.tiktokApi.getOrderDetail(
+        shopId,
+        shopCipher,
+        orderId,
+      )) as Record<string, unknown>;
+
+      orders = (orderDetail.orders ||
+        orderDetail.order_list || [orderDetail]) as Record<string, unknown>[];
+    }
 
     const results = [];
     for (const order of orders) {
+      // Inject các cờ tùy chỉnh từ Failed Delivery Tracker (nếu có)
+      if (isFailedDelivery) {
+        order._is_failed_delivery = true;
+      }
+      if (warehouseReceivedAtMs) {
+        order._jt_warehouse_received_at = warehouseReceivedAtMs;
+      }
+
       const result = await this.syncEngine.syncOrder(
         order,
-        shopId,
-        brand,
+        { shopId, brand, shopCode },
         source,
       );
       results.push(result);
@@ -115,28 +141,13 @@ export class SyncWorker extends WorkerHost {
   private async processReturn(
     returnId: string,
     shopId: string,
+    shopCode: string | null,
     shopCipher: string,
     brand: string,
     source: string,
   ) {
-    const returnDetail = (await this.tiktokApi.getReturnDetail(
-      shopId,
-      shopCipher,
-      returnId,
-    )) as Record<string, unknown>;
-
-    // Xác định loại yêu cầu
-    const requestType = this.detectRequestType(returnDetail);
-
-    const result = await this.syncEngine.syncReturn(
-      returnDetail,
-      shopId,
-      brand,
-      requestType,
-      source,
-    );
-
-    return { status: 'success', result };
+    this.logger.debug(`⏭️ [Webhook] Skipping real-time sync for return ${returnId} to save Lark API calls. Relying on Cron job.`);
+    return { status: 'skipped_to_save_api_calls', reason: 'disabled_by_user' };
   }
 
   private detectRequestType(data: Record<string, unknown>): string {

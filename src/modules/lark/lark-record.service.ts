@@ -111,6 +111,7 @@ export class LarkRecordService {
 
     // 3. Lark chưa có → Create record mới
     try {
+      this.logger.debug(`Creating record with fields: ${JSON.stringify(payload.fields)}`);
       const createResult = await this.larkApiClient.createRecord(
         appToken,
         tableId,
@@ -141,5 +142,190 @@ export class LarkRecordService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Batch Upsert records vào Lark Base.
+   */
+  async batchUpsertRecords(payloads: SyncRecordPayload[]): Promise<{ created: number; updated: number; failed: number }> {
+    if (payloads.length === 0) return { created: 0, updated: 0, failed: 0 };
+
+    let createdCount = 0;
+    let updatedCount = 0;
+    let failedCount = 0;
+
+    const appToken = this.getAppToken();
+    const tableId = this.getTableId();
+
+    // 1. Tìm trong database xem đã có record_id chưa
+    const syncKeys = payloads.map((p) => p.syncKey);
+    const existingLarkRecords = await this.prisma.larkRecord.findMany({
+      where: { syncKey: { in: syncKeys } },
+    });
+
+    const existingMap = new Map(existingLarkRecords.map((r) => [r.syncKey, r]));
+
+    const toUpdate: { record_id: string; sync_key: string; fields: Record<string, unknown> }[] = [];
+    const toCreatePayloads: SyncRecordPayload[] = [];
+    const updateSyncKeys: string[] = [];
+    const missingInDbPayloads: SyncRecordPayload[] = [];
+
+    for (const payload of payloads) {
+      const existing = existingMap.get(payload.syncKey);
+      if (existing) {
+        toUpdate.push({
+          record_id: existing.larkRecordId,
+          sync_key: payload.syncKey,
+          fields: payload.fields,
+        });
+        updateSyncKeys.push(payload.syncKey);
+      } else {
+        missingInDbPayloads.push(payload);
+      }
+    }
+
+    // 1.5 Tìm kiếm trên Lark những records không có trong DB (Self-heal)
+    if (missingInDbPayloads.length > 0) {
+      this.logger.log(`🔍 Searching ${missingInDbPayloads.length} records in Lark to prevent duplicates...`);
+      // Chia thành các mảng nhỏ nếu số lượng quá lớn (mặc dù batch limit là 500)
+      const missingKeys = missingInDbPayloads.map(p => p.syncKey);
+      
+      try {
+        const searchResult = await this.larkApiClient.batchSearchRecords(
+          appToken, 
+          tableId, 
+          'sync_key', 
+          missingKeys
+        );
+
+        if (searchResult.items && searchResult.items.length > 0) {
+          const larkFoundMap = new Map(searchResult.items.map(item => [String(item.fields.sync_key), item.record_id]));
+          
+          for (const payload of missingInDbPayloads) {
+            const foundRecordId = larkFoundMap.get(payload.syncKey);
+            if (foundRecordId) {
+              // Lark đã có -> Chuyển sang toUpdate và lưu bù vào DB
+              toUpdate.push({
+                record_id: foundRecordId,
+                sync_key: payload.syncKey,
+                fields: payload.fields,
+              });
+              updateSyncKeys.push(payload.syncKey);
+              
+              // Self-heal DB
+              await this.prisma.larkRecord.create({
+                data: {
+                  syncKey: payload.syncKey,
+                  larkAppToken: appToken,
+                  larkTableId: tableId,
+                  larkRecordId: foundRecordId,
+                  lastSyncedAt: new Date(),
+                }
+              }).catch(() => {}); // Bỏ qua lỗi duplicate nếu lỡ có
+              
+              this.logger.debug(`🩹 Self-healed record ${payload.syncKey} (ID: ${foundRecordId})`);
+            } else {
+              // Lark thực sự chưa có -> Tạo mới
+              toCreatePayloads.push(payload);
+            }
+          }
+        } else {
+           // Không tìm thấy gì trên Lark -> Tạo mới tất cả
+           toCreatePayloads.push(...missingInDbPayloads);
+        }
+      } catch (error) {
+        this.logger.error(`⚠️ Lark batch search failed, falling back to create: ${error instanceof Error ? error.message : 'Unknown'}`);
+        toCreatePayloads.push(...missingInDbPayloads);
+      }
+    }
+
+    // 2. Thực hiện Batch Update (mỗi lần max 500 records)
+    if (toUpdate.length > 0) {
+      for (let i = 0; i < toUpdate.length; i += 500) {
+        const chunk = toUpdate.slice(i, i + 500);
+        try {
+          const apiChunk = chunk.map(c => ({ record_id: c.record_id, fields: c.fields }));
+          await this.larkApiClient.batchUpdateRecords(appToken, tableId, apiChunk);
+          updatedCount += chunk.length;
+        } catch (error) {
+          this.logger.warn(`⚠️ Lark batch update failed, falling back to 1-by-1: ${error instanceof Error ? error.message : 'Unknown'}`);
+          for (const item of chunk) {
+            try {
+              await this.larkApiClient.updateRecord(appToken, tableId, item.record_id, item.fields);
+              updatedCount++;
+            } catch (fallbackError) {
+              failedCount++;
+              this.logger.error(`❌ Lark individual update failed for syncKey ${item.sync_key} (record_id ${item.record_id}): ${fallbackError instanceof Error ? fallbackError.message : 'Unknown'}`);
+            }
+          }
+        }
+      }
+      // Update local db timestamp
+      await this.prisma.larkRecord.updateMany({
+        where: { syncKey: { in: updateSyncKeys } },
+        data: { lastSyncedAt: new Date() },
+      });
+    }
+
+    // 3. Thực hiện Batch Create (mỗi lần max 500 records)
+    if (toCreatePayloads.length > 0) {
+      const toCreate = toCreatePayloads.map((p) => ({
+        sync_key: p.syncKey,
+        fields: { ...p.fields, sync_key: p.syncKey },
+      }));
+
+      for (let i = 0; i < toCreate.length; i += 500) {
+        const createChunk = toCreate.slice(i, i + 500);
+        const apiChunk = createChunk.map(c => ({ fields: c.fields }));
+        const payloadChunk = toCreatePayloads.slice(i, i + 500);
+        try {
+          const createResult = await this.larkApiClient.batchCreateRecords(
+            appToken,
+            tableId,
+            apiChunk
+          );
+
+          if (createResult.records && createResult.records.length === payloadChunk.length) {
+            createdCount += payloadChunk.length;
+            // Save to local db
+            const newDbRecords = createResult.records.map((r: any, index: number) => ({
+              syncKey: payloadChunk[index].syncKey,
+              larkAppToken: appToken,
+              larkTableId: tableId,
+              larkRecordId: r.record_id,
+              lastSyncedAt: new Date(),
+            }));
+            await this.prisma.larkRecord.createMany({
+              data: newDbRecords,
+              skipDuplicates: true,
+            });
+          }
+        } catch (error) {
+          this.logger.warn(`⚠️ Lark batch create failed, falling back to 1-by-1: ${error instanceof Error ? error.message : 'Unknown'}`);
+          for (let j = 0; j < createChunk.length; j++) {
+            const item = createChunk[j];
+            const p = payloadChunk[j];
+            try {
+              const res = await this.larkApiClient.createRecord(appToken, tableId, item.fields);
+              createdCount++;
+              await this.prisma.larkRecord.create({
+                data: {
+                  syncKey: p.syncKey,
+                  larkAppToken: appToken,
+                  larkTableId: tableId,
+                  larkRecordId: res.record.record_id,
+                  lastSyncedAt: new Date(),
+                },
+              });
+            } catch (fallbackError) {
+              failedCount++;
+              this.logger.error(`❌ Lark individual create failed for syncKey ${item.sync_key}: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown'}`);
+            }
+          }
+        }
+      }
+    }
+
+    return { created: createdCount, updated: updatedCount, failed: failedCount };
   }
 }

@@ -1,0 +1,532 @@
+{
+  "584906968398922962": {
+    "orders": [
+      {
+        "buyer_email": "v4bGWX6HYJXYEVNMNJP4HTVGIMT2Y@scs2.tiktok.com",
+        "buyer_message": "",
+        "cancel_order_sla_time": 1783702799,
+        "cancel_reason": "Kh+¶ng c+¶n nhu cﬂ¶∫u",
+        "cancellation_initiator": "BUYER",
+        "collection_due_time": 1783702799,
+        "collection_time": 1783423968,
+        "commerce_platform": "TIKTOK_SHOP",
+        "create_time": 1783421408,
+        "delivery_option_id": "7432128368880912144",
+        "delivery_option_name": "Next-day delivery",
+        "delivery_time": 1783488971,
+        "delivery_type": "HOME_DELIVERY",
+        "fast_dispatch_sla_time": 1783443599,
+        "fulfillment_priority_level": 400,
+        "fulfillment_type": "FULFILLMENT_BY_SELLER",
+        "has_updated_recipient_address": false,
+        "id": "584906968398922962",
+        "is_cod": true,
+        "is_on_hold_order": false,
+        "is_replacement_order": false,
+        "is_sample_order": false,
+        "line_items": [
+          {
+            "cancel_reason": "Kh+¶ng c+¶n nhu cﬂ¶∫u",
+            "cancel_user": "BUYER",
+            "currency": "VND",
+            "display_status": "DELIVERED",
+            "gift_retail_price": "0",
+            "id": "584906968398988498",
+            "is_gift": false,
+            "original_price": "279000",
+            "package_id": "1202713670907233490",
+            "package_status": "COMPLETED",
+            "platform_discount": "0",
+            "product_id": "1731479269680712036",
+            "product_name": "-…ai chﬂ+Êng g+¶ l¶¶ng nam, nﬂ+ª, hﬂ+˘ trﬂ+˙ -Êﬂ+Ônh h+ºnh t¶¶ thﬂ¶+, giﬂ¶˙m g+¶ l¶¶ng, cong vﬂ¶¶o cﬂ+÷t cﬂ+Êng, vai kh+¶ng c+Ûn -Êﬂ+Êi, ch+°nh h+˙ng GoodFit GF711P",
+            "rts_time": 1783422276,
+            "sale_price": "165000",
+            "seller_discount": "114000",
+            "seller_sku": "GF711P",
+            "shipping_provider_id": "6841743441349706241",
+            "shipping_provider_name": "J&T Express",
+            "sku_id": "1731479362445412708",
+            "sku_image": "https://p16-oec-sg.ibyteimg.com/tos-alisg-i-aphluv4xwc-sg/4a46d52c419141a0bef24eea99e2dffc~tplv-aphluv4xwc-origin-jpeg.jpeg?dr=15568&t=555f072d&ps=933b5bde&shp=54477afb&shcp=3c3d9ffb&idc=my2&from=1413970683",
+            "sku_name": "Mﬂ¶+c -Êﬂ+Ônh",
+            "sku_type": "NORMAL",
+            "tracking_number": "862042763802"
+          }
+        ],
+        "order_type": "NORMAL",
+        "packages": [
+          {
+            "id": "1202713670907233490"
+          }
+        ],
+        "paid_time": 1783488971,
+        "payment": {
+          "currency": "VND",
+          "original_shipping_fee": "30300",
+          "original_total_product_price": "279000",
+          "platform_discount": "0",
+          "seller_discount": "114000",
+          "shipping_fee": "0",
+          "shipping_fee_cofunded_discount": "0",
+          "shipping_fee_platform_discount": "30300",
+          "shipping_fee_seller_discount": "0",
+          "sub_total": "165000",
+          "tax": "0",
+          "total_amount": "165000"
+        },
+        "payment_method_code": "pm_pi_cod_cod_c_d",
+        "payment_method_name": "Cash on delivery",
+        "recipient_address": {
+          "address_detail": "ng**************************************************",
+          "address_line1": "ng**************************************************",
+          "address_line2": "",
+          "address_line3": "",
+          "address_line4": "",
+          "district_info": [
+            {
+              "address_level": "L0",
+              "address_level_name": "Country",
+              "address_name": "Viﬂ+Át Nam",
+              "iso_code": "VN"
+            },
+            {
+              "address_level": "L1",
+              "address_level_name": "province",
+              "address_name": "Bﬂ¶ªc Ninh",
+              "iso_code": "56"
+            },
+            {
+              "address_level": "L2",
+              "address_level_name": "town",
+              "address_name": "Tﬂ+Ω S¶Ìn"
+            },
+            {
+              "address_level": "L3",
+              "address_level_name": "ward",
+              "address_name": "Ta******"
+            }
+          ],
+          "first_name": "",
+          "first_name_local_script": "",
+          "full_address": "Viﬂ+Át Nam, Bﬂ¶ªc Ninh, Tﬂ+Ω S¶Ìn, Ta******,ng**************************************************",
+          "last_name": "",
+          "last_name_local_script": "",
+          "name": "-Ê** n***a",
+          "phone_number": "(+84)096*****88",
+          "postal_code": "",
+          "region_code": "VN"
+        },
+        "recommended_shipping_time": 1783443599000,
+        "rts_sla_time": 1783512000,
+        "rts_time": 1783422276,
+        "seller_note": "-Êﬂ+¨c ngh-¨a\n(+84)0965528388\nng+¶ 95 so nha 3 khu pho d¶¶¶Ìng l+¶i tan hﬂ+Ùng tﬂ+Ω s¶Ìn bn\nTan Hong,Tﬂ+Ω S¶Ìn,Bﬂ¶ªc N",
+        "shipping_due_time": 1783616399,
+        "shipping_provider": "J&T Express",
+        "shipping_provider_id": "6841743441349706241",
+        "shipping_type": "TIKTOK",
+        "status": "DELIVERED",
+        "tracking_number": "862042763802",
+        "tts_sla_time": 1783443599,
+        "update_time": 1783552798,
+        "user_id": "7494052978018061522",
+        "warehouse_id": "7084142100186515206"
+      }
+    ]
+  },
+  "584878715104692203": {
+    "orders": [
+      {
+        "buyer_email": "v4bGWX6HYJXYEVNMNPPMGSEM7XO24@scs2.tiktok.com",
+        "buyer_message": "",
+        "cancel_order_sla_time": 1783616399,
+        "cancel_reason": "Mﬂ¶+t h+·ng qu+Ì lﬂ+¢n hoﬂ¶+c qu+Ì nhﬂ+≈",
+        "cancellation_initiator": "BUYER",
+        "collection_due_time": 1783616399,
+        "collection_time": 1783308390,
+        "commerce_platform": "TIKTOK_SHOP",
+        "create_time": 1783293861,
+        "delivery_option_id": "7057025213938009858",
+        "delivery_option_name": "Standard shipping",
+        "delivery_time": 1783483631,
+        "delivery_type": "HOME_DELIVERY",
+        "fulfillment_priority_level": 600,
+        "fulfillment_type": "FULFILLMENT_BY_SELLER",
+        "has_updated_recipient_address": false,
+        "id": "584878715104692203",
+        "is_cod": true,
+        "is_on_hold_order": false,
+        "is_replacement_order": false,
+        "is_sample_order": false,
+        "line_items": [
+          {
+            "cancel_reason": "Mﬂ¶+t h+·ng qu+Ì lﬂ+¢n hoﬂ¶+c qu+Ì nhﬂ+≈",
+            "cancel_user": "BUYER",
+            "currency": "VND",
+            "display_status": "DELIVERED",
+            "gift_retail_price": "0",
+            "id": "584878715104757739",
+            "is_gift": false,
+            "original_price": "279000",
+            "package_id": "1202479699572066283",
+            "package_status": "COMPLETED",
+            "platform_discount": "0",
+            "product_id": "1731479269680712036",
+            "product_name": "-…ai chﬂ+Êng g+¶ l¶¶ng nam, nﬂ+ª, hﬂ+˘ trﬂ+˙ -Êﬂ+Ônh h+ºnh t¶¶ thﬂ¶+, giﬂ¶˙m g+¶ l¶¶ng, cong vﬂ¶¶o cﬂ+÷t cﬂ+Êng, vai kh+¶ng c+Ûn -Êﬂ+Êi, ch+°nh h+˙ng GoodFit GF711P",
+            "rts_time": 1783300841,
+            "sale_price": "170000",
+            "seller_discount": "109000",
+            "seller_sku": "GF711P",
+            "shipping_provider_id": "6841743441349706241",
+            "shipping_provider_name": "J&T Express",
+            "sku_id": "1731479362445412708",
+            "sku_image": "https://p16-oec-sg.ibyteimg.com/tos-alisg-i-aphluv4xwc-sg/4a46d52c419141a0bef24eea99e2dffc~tplv-aphluv4xwc-origin-jpeg.jpeg?dr=15568&t=555f072d&ps=933b5bde&shp=54477afb&shcp=3c3d9ffb&idc=my2&from=1413970683",
+            "sku_name": "Mﬂ¶+c -Êﬂ+Ônh",
+            "sku_type": "NORMAL",
+            "tracking_number": "862019283391"
+          }
+        ],
+        "order_type": "NORMAL",
+        "packages": [
+          {
+            "id": "1202479699572066283"
+          }
+        ],
+        "paid_time": 1783483631,
+        "payment": {
+          "currency": "VND",
+          "original_shipping_fee": "40000",
+          "original_total_product_price": "279000",
+          "platform_discount": "0",
+          "seller_discount": "109000",
+          "shipping_fee": "0",
+          "shipping_fee_cofunded_discount": "0",
+          "shipping_fee_platform_discount": "40000",
+          "shipping_fee_seller_discount": "0",
+          "sub_total": "170000",
+          "tax": "0",
+          "total_amount": "170000"
+        },
+        "payment_method_code": "pm_pi_cod_cod_c_d",
+        "payment_method_name": "Cash on delivery",
+        "recipient_address": {
+          "address_detail": "Ho*****************************************************************************",
+          "address_line1": "Ho**************",
+          "address_line2": "Kc************************************************************",
+          "address_line3": "",
+          "address_line4": "",
+          "district_info": [
+            {
+              "address_level": "L0",
+              "address_level_name": "Country",
+              "address_name": "Viﬂ+Át Nam",
+              "iso_code": "VN"
+            },
+            {
+              "address_level": "L1",
+              "address_level_name": "province",
+              "address_name": "B+ºnh -…ﬂ+Ônh",
+              "iso_code": "31"
+            },
+            {
+              "address_level": "L2",
+              "address_level_name": "town",
+              "address_name": "An Nh¶Ìn"
+            },
+            {
+              "address_level": "L3",
+              "address_level_name": "ward",
+              "address_name": "Nh******"
+            }
+          ],
+          "first_name": "",
+          "first_name_local_script": "",
+          "full_address": "Viﬂ+Át Nam, B+ºnh -…ﬂ+Ônh, An Nh¶Ìn, Nh******,Ho*****************************************************************************",
+          "last_name": "",
+          "last_name_local_script": "",
+          "name": "J***torShop",
+          "phone_number": "(+84)365****97",
+          "postal_code": "",
+          "region_code": "VN"
+        },
+        "recommended_shipping_time": 1783357199000,
+        "rts_sla_time": 1783339200,
+        "rts_time": 1783300841,
+        "seller_note": "JunstorShop\n(+84)365859197\nHoa sen nh¶Ìn ho+·(Kcn nh¶Ìn ho+· - Nh¶Ìn Ho+· - Thﬂ+Ô x+˙ an nh¶Ìn - B+ºnh -Êﬂ+Ônh (Ho",
+        "shipping_due_time": 1783529999,
+        "shipping_provider": "J&T Express",
+        "shipping_provider_id": "6841743441349706241",
+        "shipping_type": "TIKTOK",
+        "status": "DELIVERED",
+        "tracking_number": "862019283391",
+        "tts_sla_time": 1783357199,
+        "update_time": 1783501185,
+        "user_id": "7494007990493087723",
+        "warehouse_id": "7488899273935341318"
+      }
+    ]
+  },
+  "584852942476444884": {
+    "orders": [
+      {
+        "buyer_email": "v4bGWX6HYJXYEVNMNVP4OAWA6TR2Y@scs2.tiktok.com",
+        "buyer_message": "",
+        "cancel_order_sla_time": 1783529999,
+        "cancel_reason": "Mﬂ¶+t h+·ng qu+Ì lﬂ+¢n hoﬂ¶+c qu+Ì nhﬂ+≈",
+        "cancellation_initiator": "BUYER",
+        "collection_due_time": 1783529999,
+        "collection_time": 1783163973,
+        "commerce_platform": "TIKTOK_SHOP",
+        "create_time": 1783158482,
+        "delivery_option_id": "7432128368880912144",
+        "delivery_option_name": "Next-day delivery",
+        "delivery_time": 1783223323,
+        "delivery_type": "HOME_DELIVERY",
+        "fast_dispatch_sla_time": 1783184399,
+        "fulfillment_priority_level": 400,
+        "fulfillment_type": "FULFILLMENT_BY_SELLER",
+        "has_updated_recipient_address": false,
+        "id": "584852942476444884",
+        "is_cod": false,
+        "is_on_hold_order": false,
+        "is_replacement_order": false,
+        "is_sample_order": false,
+        "line_items": [
+          {
+            "cancel_reason": "Mﬂ¶+t h+·ng qu+Ì lﬂ+¢n hoﬂ¶+c qu+Ì nhﬂ+≈",
+            "cancel_user": "BUYER",
+            "currency": "VND",
+            "display_status": "COMPLETED",
+            "gift_retail_price": "0",
+            "id": "584852942476510420",
+            "is_gift": false,
+            "original_price": "329000",
+            "package_id": "1202328448235046100",
+            "package_status": "COMPLETED",
+            "platform_discount": "21400",
+            "product_id": "1730781237886421348",
+            "product_name": "Gﬂ¶°y leo n+¶i, gﬂ¶°y trekking GoodFit ch+°nh h+˙ng gﬂ¶—p kh+¶c d+¶ng du lﬂ+Ôch, ph¶¶ﬂ+˙t, d+˙ ngoﬂ¶Ìi GF03E",
+            "rts_time": 1783159334,
+            "sale_price": "192600",
+            "seller_discount": "115000",
+            "seller_sku": "GF03E-D",
+            "shipping_provider_id": "6841743441349706241",
+            "shipping_provider_name": "J&T Express",
+            "sku_id": "1730781497062099300",
+            "sku_image": "https://p16-oec-va.ibyteimg.com/tos-maliva-i-o3syd03w52-us/1d494732b5cb488fb74c0924793631a5~tplv-o3syd03w52-origin-jpeg.jpeg?dr=15568&t=555f072d&ps=933b5bde&shp=54477afb&shcp=3c3d9ffb&idc=my&from=1413970683",
+            "sku_name": "-…en",
+            "sku_type": "NORMAL",
+            "tracking_number": "862038776620"
+          }
+        ],
+        "order_type": "NORMAL",
+        "packages": [
+          {
+            "id": "1202328448235046100"
+          }
+        ],
+        "paid_time": 1783158483,
+        "payment": {
+          "currency": "VND",
+          "original_shipping_fee": "29700",
+          "original_total_product_price": "329000",
+          "platform_discount": "21400",
+          "seller_discount": "115000",
+          "shipping_fee": "0",
+          "shipping_fee_cofunded_discount": "0",
+          "shipping_fee_platform_discount": "29700",
+          "shipping_fee_seller_discount": "0",
+          "sub_total": "192600",
+          "tax": "0",
+          "total_amount": "192600"
+        },
+        "payment_method_code": "pm_pi_ew_pipocredit_c_d",
+        "payment_method_name": "TikTok Shop Balance",
+        "recipient_address": {
+          "address_detail": "Tﬂ+Ú***************************************************************",
+          "address_line1": "Tﬂ+Ú***************************************************************",
+          "address_line2": "",
+          "address_line3": "",
+          "address_line4": "",
+          "district_info": [
+            {
+              "address_level": "L0",
+              "address_level_name": "Country",
+              "address_name": "Viﬂ+Át Nam",
+              "iso_code": "VN"
+            },
+            {
+              "address_level": "L1",
+              "address_level_name": "province",
+              "address_name": "Th+Ìi Nguy+¨n",
+              "iso_code": "69"
+            },
+            {
+              "address_level": "L2",
+              "address_level_name": "city",
+              "address_name": "Ph¶¶ﬂ+•ng Phan -…+ºnh Ph+¶ng"
+            },
+            {
+              "address_level": "L3",
+              "address_level_name": "ward",
+              "address_name": "Ph********************"
+            }
+          ],
+          "first_name": "",
+          "first_name_local_script": "",
+          "full_address": "Viﬂ+Át Nam, Th+Ìi Nguy+¨n, Ph¶¶ﬂ+•ng Phan -…+ºnh Ph+¶ng, Ph********************,Tﬂ+Ú***************************************************************",
+          "last_name": "",
+          "last_name_local_script": "",
+          "name": "-…*** V*** -…**",
+          "phone_number": "(+84)037*****76",
+          "postal_code": "",
+          "region_code": "VN"
+        },
+        "recommended_shipping_time": 1783184399000,
+        "rts_sla_time": 1783339200,
+        "rts_time": 1783159334,
+        "seller_note": "-…inh Viﬂ+Át -…ﬂ+¨c\n(+84)0373534176\nTﬂ+Ú 1 -Ê¶¶ﬂ+•ng Phan Bﬂ+÷i Ch+Ûu -Ê¶¶ﬂ+•ng Phan -…+ºnh Ph+¶ng\nPh¶¶ﬂ+•ng Phan -…+ºnh Ph+¶ng,",
+        "shipping_due_time": 1783443599,
+        "shipping_provider": "J&T Express",
+        "shipping_provider_id": "6841743441349706241",
+        "shipping_type": "TIKTOK",
+        "status": "COMPLETED",
+        "tracking_number": "862038776620",
+        "tts_sla_time": 1783184399,
+        "update_time": 1783482140,
+        "user_id": "7494007341679871188",
+        "warehouse_id": "7084142100186515206"
+      }
+    ]
+  },
+  "584836838545786734": {
+    "orders": [
+      {
+        "buyer_email": "v4bGWX6HYJXYEVNMNRP4DLYOK352Y@scs2.tiktok.com",
+        "buyer_message": "",
+        "cancel_order_sla_time": 1783443599,
+        "cancel_reason": "Giao g+¶i h+·ng thﬂ¶—t bﬂ¶Ìi",
+        "cancel_time": 1783474195,
+        "cancellation_initiator": "SYSTEM",
+        "collection_due_time": 1783443599,
+        "collection_time": 1783077498,
+        "commerce_platform": "TIKTOK_SHOP",
+        "create_time": 1783076577,
+        "delivery_option_id": "7057025213938009858",
+        "delivery_option_name": "Standard shipping",
+        "delivery_type": "HOME_DELIVERY",
+        "fulfillment_priority_level": 600,
+        "fulfillment_type": "FULFILLMENT_BY_SELLER",
+        "has_updated_recipient_address": false,
+        "id": "584836838545786734",
+        "is_cod": true,
+        "is_on_hold_order": false,
+        "is_replacement_order": false,
+        "is_sample_order": false,
+        "line_items": [
+          {
+            "cancel_reason": "Kh+¶ng c+¶n nhu cﬂ¶∫u",
+            "cancel_user": "BUYER",
+            "currency": "VND",
+            "display_status": "CANCELLED",
+            "gift_retail_price": "0",
+            "id": "584836838545852270",
+            "is_gift": false,
+            "original_price": "199000",
+            "package_id": "1202211460902651758",
+            "package_status": "CANCELLED",
+            "platform_discount": "0",
+            "product_id": "1729425157408328036",
+            "product_name": "(1 CHIﬂ¶+C) B+¶ gﬂ+Êi thﬂ+‚ thao GoodFit c+¶ -Êai buﬂ+÷c chﬂ¶ªc chﬂ¶ªn, b-‚ng gﬂ+Êi thﬂ+∫ m+¶n, tﬂ¶°p gym co gi+˙n 4 chiﬂ+¸u, viﬂ+¸n silicone chﬂ+Êng tr¶¶ﬂ+˙t GF511K",
+            "rts_time": 1783076716,
+            "sale_price": "115500",
+            "seller_discount": "83500",
+            "seller_sku": "GF511K-M",
+            "shipping_provider_id": "6841743441349706241",
+            "shipping_provider_name": "J&T Express",
+            "sku_id": "1729566301051586916",
+            "sku_image": "https://p16-oec-va.ibyteimg.com/tos-maliva-i-o3syd03w52-us/89639e40d292406babf1fbf007dbc695~tplv-o3syd03w52-origin-jpeg.jpeg?dr=15568&t=555f072d&ps=933b5bde&shp=54477afb&shcp=3c3d9ffb&idc=my3&from=1413970683",
+            "sku_name": "M, 1 chiﬂ¶+c",
+            "sku_type": "NORMAL",
+            "tracking_number": "862011931640"
+          },
+          {
+            "cancel_reason": "Kh+¶ng c+¶n nhu cﬂ¶∫u",
+            "cancel_user": "BUYER",
+            "currency": "VND",
+            "display_status": "CANCELLED",
+            "gift_retail_price": "0",
+            "id": "584836838545917806",
+            "is_gift": false,
+            "original_price": "199000",
+            "package_id": "1202211460902651758",
+            "package_status": "CANCELLED",
+            "platform_discount": "0",
+            "product_id": "1729425157408328036",
+            "product_name": "(1 CHIﬂ¶+C) B+¶ gﬂ+Êi thﬂ+‚ thao GoodFit c+¶ -Êai buﬂ+÷c chﬂ¶ªc chﬂ¶ªn, b-‚ng gﬂ+Êi thﬂ+∫ m+¶n, tﬂ¶°p gym co gi+˙n 4 chiﬂ+¸u, viﬂ+¸n silicone chﬂ+Êng tr¶¶ﬂ+˙t GF511K",
+            "rts_time": 1783076716,
+            "sale_price": "115500",
+            "seller_discount": "83500",
+            "seller_sku": "GF511K-M",
+            "shipping_provider_id": "6841743441349706241",
+            "shipping_provider_name": "J&T Express",
+            "sku_id": "1729566301051586916",
+            "sku_image": "https://p16-oec-va.ibyteimg.com/tos-maliva-i-o3syd03w52-us/89639e40d292406babf1fbf007dbc695~tplv-o3syd03w52-origin-jpeg.jpeg?dr=15568&t=555f072d&ps=933b5bde&shp=54477afb&shcp=3c3d9ffb&idc=my3&from=1413970683",
+            "sku_name": "M, 1 chiﬂ¶+c",
+            "sku_type": "NORMAL",
+            "tracking_number": "862011931640"
+          }
+        ],
+        "order_type": "NORMAL",
+        "packages": [
+          {
+            "id": "1202211460902651758"
+          }
+        ],
+        "payment": {
+          "currency": "VND",
+          "original_shipping_fee": "41400",
+          "original_total_product_price": "398000",
+          "platform_discount": "0",
+          "seller_discount": "167000",
+          "shipping_fee": "0",
+          "shipping_fee_cofunded_discount": "0",
+          "shipping_fee_platform_discount": "41400",
+          "shipping_fee_seller_discount": "0",
+          "sub_total": "231000",
+          "tax": "0",
+          "total_amount": "231000"
+        },
+        "payment_method_name": "Cash on delivery",
+        "recipient_address": {
+          "address_detail": "",
+          "address_line1": "",
+          "address_line2": "",
+          "address_line3": "",
+          "address_line4": "",
+          "delivery_preferences": {
+            "drop_off_location": ""
+          },
+          "first_name": "",
+          "full_address": "",
+          "last_name": "",
+          "name": "",
+          "phone_number": "",
+          "postal_code": "",
+          "region_code": ""
+        },
+        "recommended_shipping_time": 1783184399000,
+        "rts_sla_time": 1783166400,
+        "rts_time": 1783076716,
+        "shipping_due_time": 1783357199,
+        "shipping_provider": "J&T Express",
+        "shipping_provider_id": "6841743441349706241",
+        "shipping_type": "TIKTOK",
+        "status": "CANCELLED",
+        "tracking_number": "862011931640",
+        "tts_sla_time": 1783184399,
+        "update_time": 1783474694,
+        "user_id": "7494009539405449070",
+        "warehouse_id": "7084142100186515206"
+      }
+    ]
+  }
+}

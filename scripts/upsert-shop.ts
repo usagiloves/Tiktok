@@ -49,6 +49,7 @@ async function main() {
 
   const firstShop = shops[0];
   const shopCipher = firstShop.cipher || firstShop.shop_cipher;
+  const shopCode = firstShop.code || firstShop.shop_code || null;
   const shopName = firstShop.name || 'Unknown Shop';
   // Attempt to parse brand from shop name (e.g., "GOODFIT Vietnam" -> "GOODFIT")
   const brand = shopName.replace(/\s+Vietnam$/i, '') || 'GOODFIT';
@@ -59,6 +60,7 @@ async function main() {
   }
 
   console.log(`Found shop: ${shopName}`);
+  console.log(`Code: ${shopCode}`);
   console.log(`Cipher: ${shopCipher}`);
   console.log(`Brand: ${brand}`);
 
@@ -73,6 +75,7 @@ async function main() {
     },
     update: {
       shopName,
+      shopCode,
       brand,
       shopCipher,
       isActive: true,
@@ -81,6 +84,7 @@ async function main() {
       platform: PLATFORMS.TIKTOK,
       shopId: shopId,
       shopName,
+      shopCode,
       brand,
       shopCipher,
       isActive: true,

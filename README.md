@@ -1,112 +1,218 @@
-# TikTok Shop → Lark Base Automation
+# 🚀 E-Commerce to Lark Base Automation System (TikTok & Shopee)
 
-Hệ thống tự động đồng bộ dữ liệu đơn hàng, hoàn trả, hủy đơn, và khiếu nại từ TikTok Shop vào bảng quản lý CSKH trên Lark Base.
+Hệ thống đồng bộ dữ liệu tập trung (Data Synchronization Hub) tự động hóa luồng nghiệp vụ Đơn hàng, Trả hàng/Hoàn tiền, và Giao hàng thất bại từ các sàn Thương mại điện tử (TikTok Shop, Shopee) về bảng quản lý chăm sóc khách hàng (CSKH) trên Lark Base.
 
-## Tính Năng Chính
-
-- **Đồng bộ tự động**: Kéo dữ liệu đơn hàng mới và trạng thái đơn thay đổi liên tục.
-- **Webhook realtime**: Lắng nghe và cập nhật ngay khi trạng thái đơn (Order) hoặc yêu cầu hoàn/trả (Return/Refund) thay đổi.
-- **Cron đối soát**: Có 4 lịch đối soát tự động chạy ngầm (10 phút, 30 phút, hàng ngày, hàng tuần) để đảm bảo không bị miss dữ liệu nếu webhook lỗi.
-- **Bảo vệ dữ liệu**: Chỉ cập nhật các cột hệ thống. Các cột do team CSKH nhập tay (ví dụ: Người phụ trách, Ghi chú CSKH, Kết quả xử lý nội bộ) sẽ được giữ nguyên không bị ghi đè.
-- **Cảnh báo lỗi**: Tự động bắn thông báo lỗi qua Lark Bot nếu quá trình sync bị lỗi nhiều lần.
-- **Admin Dashboard**: Cung cấp các API thủ công để admin có thể retry đơn lỗi hoặc đối soát lại (reconcile) theo khoảng ngày.
+Tài liệu này cung cấp cái nhìn toàn cảnh và chi tiết về cấu trúc hệ thống, luồng dữ liệu, và các module nghiệp vụ phức tạp để hỗ trợ các kỹ sư phát triển và vận hành hệ thống trong tương lai.
 
 ---
 
-## Cấu Trúc Hệ Thống (Tech Stack)
+## 🏗️ 1. Kiến trúc Hệ thống (System Architecture)
 
-- **Backend Framework**: [NestJS](https://nestjs.com/) (Node.js + TypeScript)
-- **Database**: PostgreSQL
-- **Queue/Worker**: Redis + [BullMQ](https://docs.bullmq.io/)
-- **ORM**: [Prisma v7](https://www.prisma.io/)
-- **Deployment**: Docker + Docker Compose
+Hệ thống được thiết kế theo tư tưởng **Clean Architecture** kết hợp với mô hình **Event-Driven** và **Anti-Corruption Layer (Lớp chống tham nhũng dữ liệu)** để đảm bảo tính mở rộng và độc lập với các thay đổi từ API của bên thứ 3 (TikTok/Shopee).
 
----
+### Tech Stack Khung:
+- **Core Framework**: NestJS (Node.js + TypeScript).
+- **Database**: PostgreSQL (Primary Data Store) + Prisma ORM.
+- **Message Broker / Queue**: Redis + BullMQ.
+- **Deployment**: Docker & Docker Compose.
 
-## Yêu Cầu Cài Đặt (Prerequisites)
-
-1. [Node.js](https://nodejs.org/) (Khuyến nghị bản LTS v18 hoặc v20)
-2. [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Hoặc cài sẵn PostgreSQL và Redis riêng biệt)
-3. Cài đặt biến môi trường toàn cầu (Tùy chọn: `npm i -g @nestjs/cli prisma`)
-
----
-
-## Hướng Dẫn Cài Đặt & Chạy Local
-
-### Bước 1: Cài đặt thư viện
-Mở terminal tại thư mục gốc của project:
-```bash
-npm install
-```
-
-### Bước 2: Khởi động Database (PostgreSQL + Redis)
-Nếu bạn đã cài Docker Desktop, chạy lệnh sau để khởi tạo database:
-```bash
-docker compose up -d
-```
-*(Nếu bạn không dùng Docker, vui lòng cài PostgreSQL và Redis thủ công và đổi URI trong file `.env`)*
-
-### Bước 3: Cấu hình biến môi trường
-File `.env` đã được cấu hình mặc định sẵn để kết nối local DB. 
-Tuy nhiên, để test thực tế bạn cần thay các giá trị của **TikTok** và **Lark** bằng API key thật:
-- `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`
-- `LARK_APP_ID`, `LARK_APP_SECRET`, `LARK_BASE_APP_TOKEN`, `LARK_TABLE_ID_CSKH`
-
-### Bước 4: Khởi tạo Database Schema (Migration)
-Chạy lệnh Prisma để tạo các bảng trong PostgreSQL:
-```bash
-npx prisma migrate dev --name init
-```
-
-### Bước 5: Chạy Server
-Khởi động hệ thống ở chế độ watch (hot-reload):
-```bash
-npm run start:dev
-```
-Server sẽ chạy ở địa chỉ `http://localhost:3000`
+### Các Lớp Kiến trúc (Layers):
+1. **Platform Gateway (Cửa ngõ Sàn TMĐT)**: Nơi tiếp nhận Webhook và giao tiếp API (TiktokModule, ShopeeModule).
+2. **Anti-Corruption Layer (Lớp chuẩn hóa - Normalizer)**: Dịch toàn bộ dữ liệu thô (Raw Payload) phức tạp từ các sàn thành 1 định dạng chuẩn duy nhất (`NormalizedRequest`) của hệ thống. Nhờ lớp này, nếu TikTok/Shopee thay đổi API, chúng ta chỉ cần sửa ở hàm Map, toàn bộ hệ thống lõi không bị ảnh hưởng.
+3. **Core Sync Engine (Động cơ đồng bộ)**: Nhận dữ liệu chuẩn hóa, đưa vào Hàng đợi (Queue) để điều tiết tốc độ, tránh Rate Limit, và so khớp/cập nhật lên Lark Base.
+4. **Integration Layer (Lớp tích hợp đích)**: Giao tiếp trực tiếp với Lark Open API (LarkModule) và J&T API (JtExpressModule).
 
 ---
 
-## Hướng Dẫn Test OAuth (Cấp quyền shop TikTok)
+## 🧩 2. Chức năng Chi tiết của Các Module Chuyển Sâu
 
-TikTok yêu cầu Callback URL (`TIKTOK_REDIRECT_URI`) phải là một đường dẫn public HTTPS. Để test local, bạn cần dùng **Ngrok**.
+Hệ thống được chia thành nhiều module độc lập, chịu trách nhiệm cho từng vòng đời của dữ liệu.
 
-1. Cài đặt và chạy ngrok ở port 3000:
+### 2.1. Module Nền tảng (TikTok / Shopee Modules)
+- **Quản lý Token**: Tự động mã hóa (Encrypt), lưu trữ và Auto-Refresh Token nền tảng trước khi hết hạn. Cảnh báo qua Lark Bot nếu Token bị thu hồi (Revoked).
+- **Webhook Listener**: Lắng nghe Realtime các sự kiện `ORDER_STATUS_CHANGE`, `RETURN_STATUS_CHANGE`. Lưu toàn bộ payload raw vào bảng `webhook_events` để Audit/Debug.
+- **API Client**: Cung cấp các wrapper gọi API với cơ chế Retry tự động khi gặp lỗi mạng hoặc Rate Limit (HTTP 429).
+
+### 2.2. Sync Engine (Động cơ Đồng bộ)
+Đây là trái tim của hệ thống, sử dụng **BullMQ** để xử lý bất đồng bộ.
+- **Chống Trôi Dữ Liệu (Deduplication)**: Sử dụng Job ID dán nhãn (`TIKTOK_[ShopID]_[OrderID]_[Type]`) để đảm bảo dù Webhook bắn về 10 lần trong 1 giây, hệ thống chỉ xử lý 1 lần.
+- **Cơ chế Update Thông minh (Upsert)**: 
+  - Nếu Đơn hàng chưa có trên Lark: Tạo bản ghi (Record) mới.
+  - Nếu Đơn hàng đã tồn tại: Cập nhật dữ liệu. **ĐẶC BIỆT LƯU Ý:** Hệ thống chỉ cập nhật các trường Hệ thống (System Fields như Trạng thái, Giá tiền...). Các trường do nhân sự CSKH nhập thủ công (Ghi chú, Kết quả xử lý, Người phụ trách) được bảo vệ tuyệt đối (Preserved) để không bị ghi đè.
+- **Bảng Ánh Xạ `lark_records`**: Liên kết 1-1 giữa ID Đơn hàng trên Sàn và `record_id` trên Lark Base giúp tốc độ cập nhật đạt mức siêu tốc (O(1)).
+
+### 2.3. Trái Tim Nghiệp Vụ: Failed Delivery Module (Giao hàng thất bại)
+Đây là module phức tạp và giá trị nhất hệ thống nhằm giải quyết điểm mù của TikTok API (TikTok không cung cấp trạng thái hoàn thành cho đơn giao thất bại mà treo mãi ở `CANCELLED`).
+- **Phễu lọc Nhận Diện (4 Lớp)**:
+  1. Status gốc phải là `CANCELLED`.
+  2. `Cancel Initiator` (Người hủy) phải là `LOGISTICS` hoặc `SYSTEM` (Tuyệt đối loại trừ người mua/người bán hủy).
+  3. `Cancel Reason` (Lý do hủy) phải chứa các từ khóa đặc thù như: `Giao gói hàng thất bại`, `Delivery failed`.
+- **Logic Trạng Thái (Warehouse Logic)**:
+  - Dựa vào kết nối với đơn vị vận chuyển (hoặc fallback bằng `update_time` của nền tảng), nếu kiện hàng chưa về kho (`warehouseReceivedAt = null`), hệ thống gán trạng thái trên Lark là **Đang hoàn**.
+  - Ngay khi kiện hàng về tới kho, hệ thống tự động búng trạng thái sang **Cần kiểm tra**. Giúp chống thất thoát hàng hóa hoàn trả một cách triệt để.
+
+### 2.4. Reconcile Module (Đối soát Tự Động)
+Webhook có thể bị rớt do mạng, server sập, hoặc nền tảng không bắn. Do đó, hệ thống trang bị lớp bảo vệ thứ 2 là các Cronjob Đối soát:
+- **Near-Realtime Cron (Mỗi 10 phút / 30 phút)**: Quét API lấy các đơn có sự thay đổi trong 1 giờ qua để lấp đầy lỗ hổng nếu webhook xịt.
+- **Daily Reconcile (Hàng ngày)**: Quét lùi lại 3-5 ngày để đảm bảo các đơn hàng "ngủ quên" được cập nhật.
+- **Deep Backfill (Kéo dữ liệu lịch sử)**: Hỗ trợ quét lùi 15-30 ngày đối với các Shop mới kết nối (Ví dụ: CWELL, GOODFIT).
+
+### 2.5. Report & Admin Module
+- **Summary Bot**: Mỗi ngày tự động tổng hợp báo cáo (Số lượng Đơn hàng/Hoàn trả đã đồng bộ thành công, Số lượng lỗi) và bắn tin nhắn vào Group Chat của team trên Lark.
+- **Alerting**: Bất kỳ lỗi gián đoạn nào (Invalid Token, Rate Limit, Schema Lark bị đổi) đều kích hoạt Alert gửi cho Admin xử lý tức thời.
+
+---
+
+## 🔄 3. Luồng Dữ Liệu Chi Tiết (Data Flows)
+
+### A. Luồng Đơn hàng (Order Flow)
+1. **Trigger**: Khách đặt hàng / Đơn vị VC lấy hàng -> TikTok/Shopee bắn Webhook `ORDER_STATUS_CHANGE`.
+2. **Gateway**: `WebhookController` tiếp nhận, lưu Raw vào `webhook_events`, ném Data vào `WebhookWorker`.
+3. **Normalize**: Đọc Shop Cipher, gọi lại API lấy chi tiết đơn (nếu Payload Webhook thiếu), chuẩn hóa thành `NormalizedRequest`.
+4. **Queue**: Bắn vào `SyncQueue`.
+5. **Worker**: Đọc `NormalizedRequest`, truy vấn `lark_records` xem có `record_id` chưa.
+6. **Lark API**: 
+   - Có `record_id`: Gọi `PATCH` update các cột quy định.
+   - Không có `record_id`: Gọi `POST` tạo record mới, lưu lại `record_id` vào Database.
+
+### B. Luồng Trả Hàng (Return Flow)
+Tương tự Order Flow, nhưng Normalizer sẽ trích xuất thêm các trường: Mã hoàn trả, Lý do hoàn, Hình ảnh bằng chứng, Trạng thái Hoàn (Approved, Rejected, Pending). Nếu đơn hàng là Giao hàng thất bại, luồng sẽ bị bẻ lái sang Failed Delivery Module trước khi lên Lark.
+
+---
+
+## 🗄️ 4. Sơ đồ Database (Database Schema)
+
+Hệ thống dùng 6 bảng chính (Primary Tables):
+
+1. **`Shop`**: Quản lý danh sách các cửa hàng (CWELL, GOODFIT...). Lưu `shopId`, `brand`, Trạng thái Active.
+2. **`TiktokToken` / `ShopeeToken`**: Lưu trữ Token bảo mật.
+3. **`WebhookEvent`**: Thùng chứa (Sink) log mọi Request từ nền tảng. Rất hữu ích khi cần debug lỗi 1 đơn hàng cụ thể trong quá khứ.
+4. **`NormalizedRequest`**: Kho chứa dữ liệu trung tâm. Mọi thay đổi trạng thái của Đơn/Hoàn đều lưu dưới dạng JSONB. Bảng này đóng vai trò như một Single Source of Truth nội bộ.
+5. **`LarkRecord`**: Bảng Map. `[platform] + [shopId] + [orderId]` -> `[larkRecordId]`. Đảm bảo hệ thống không tạo trùng (Duplicate) đơn hàng trên Lark.
+6. **`SyncLog`**: Lưu lịch sử đồng bộ. Ai đồng bộ? Khi nào? Thành công hay Thất bại? Lý do thất bại (Lỗi API Lark, Thiếu cột...)?
+
+---
+
+## ⚙️ 5. Hướng Dẫn Cài Đặt (Installation & Setup)
+
+### Yêu Cầu Môi Trường
+- Node.js (v18+ LTS)
+- PostgreSQL (v14+)
+- Redis (v6+)
+- Docker (Tùy chọn nếu chạy Production)
+
+### Các Bước Triển Khai Local
+
+1. **Clone & Cài Thư viện**
    ```bash
-   ngrok http 3000
+   git clone <repo_url>
+   cd tiktok
+   npm install
    ```
-2. Copy URL của ngrok (ví dụ: `https://abcd.ngrok-free.app`).
-3. Mở file `.env`, cập nhật biến môi trường:
+
+2. **Khởi tạo Database & Redis**
+   Chạy Docker Compose (Đã bao gồm cấu hình Postgres & Redis):
+   ```bash
+   docker compose up -d
+   ```
+
+3. **Cấu hình Môi trường (.env)**
+   Copy file `.env.example` thành `.env` và điền các Key:
    ```env
-   TIKTOK_REDIRECT_URI=https://abcd.ngrok-free.app/tiktok/oauth/callback
+   # Database & Redis
+   DATABASE_URL="postgresql://user:pass@localhost:5432/tiktok_sync"
+   REDIS_HOST=localhost
+   REDIS_PORT=6379
+
+   # TikTok API
+   TIKTOK_APP_KEY="your_key"
+   TIKTOK_APP_SECRET="your_secret"
+   TIKTOK_REDIRECT_URI="https://your-ngrok.app/tiktok/oauth/callback"
+
+   # Lark API
+   LARK_APP_ID="cli_xxx"
+   LARK_APP_SECRET="xxx"
+   LARK_BASE_APP_TOKEN="bas_xxx"
+   LARK_TABLE_ID_CSKH="tbl_xxx"
    ```
-4. Đăng nhập vào [TikTok Partner Center](https://partner.tiktokshop.com/), cài đặt App của bạn và cập nhật Redirect URL giống với URL ngrok ở trên.
-5. Mở trình duyệt và truy cập vào link:
-   ```text
-   http://localhost:3000/tiktok/oauth/authorize
+
+4. **Khởi tạo Schema**
+   ```bash
+   npx prisma migrate dev --name init
+   npx prisma generate
    ```
-   Hệ thống sẽ dẫn bạn sang TikTok để cấp quyền, sau khi chấp nhận, thông tin Token sẽ được lưu tự động vào Database.
+
+5. **Chạy Hệ Thống**
+   ```bash
+   npm run start:dev
+   ```
 
 ---
 
-## Các API Endpoints Quan Trọng
+## 🛠️ 6. Hướng Dẫn Vận Hành (Operational Guide)
 
-| Method | Endpoint | Chức năng |
-|--------|----------|-----------|
-| `GET`  | `/health` | Kiểm tra trạng thái server đang hoạt động |
-| `GET`  | `/tiktok/oauth/authorize` | Lấy link cài đặt ủy quyền shop |
-| `POST` | `/admin/sync/retry` | Retry đồng bộ lại 1 đơn bị lỗi qua `sync_key` |
-| `POST` | `/admin/reconcile/orders` | Đối soát lại đơn hàng theo khoảng ngày `from`, `to` |
-| `POST` | `/admin/reconcile/returns`| Đối soát lại hoàn/trả theo khoảng ngày `from`, `to` |
-| `GET`  | `/admin/dashboard` | Dashboard thống kê đơn và lỗi trong ngày |
+### Thêm một Shop mới vào hệ thống
+1. Đăng nhập vào trang Admin (hoặc gọi trực tiếp API Oauth của hệ thống).
+2. Hệ thống chuyển hướng sang TikTok/Shopee để chủ Shop cấp quyền (Authorize).
+3. Sau khi Callback thành công, hệ thống tự sinh Record vào bảng `Shop` và lưu `Token`.
+4. **Kích hoạt Backfill**: Chạy Script `scripts/trigger-radar-vps.js` hoặc gọi API `POST /admin/reconcile/orders` để quét lùi dữ liệu lịch sử của Shop mới về Lark Base. Từ đây, Webhook sẽ tự động tiếp quản các đơn phát sinh mới.
+
+### Xử lý Sự cố & Bảo trì
+- **Mất Webhook**: Hệ thống có Cronjob đối soát (Reconcile) 10 phút/lần. Nếu mất Webhook, Cronjob sẽ tự động lấp đầy khoảng trống dữ liệu. Không cần can thiệp tay.
+- **Thêm Cột mới trên Lark Base**: Cập nhật file `LarkPayload` trong code để ánh xạ trường dữ liệu mới -> Khởi động lại Server -> Đồng bộ sẽ tiếp tục với cột mới.
+- **Kiểm tra Logs**: Toàn bộ Sync Logs và Lỗi đứt gãy được bắn thẳng vào Lark Bot hoặc lưu trong bảng `sync_logs`.
 
 ---
 
-## Cấu trúc Database (6 bảng chính)
+## 📂 7. Cấu trúc thư mục Chi tiết (Directory Structure)
 
-1. `shops`: Chứa danh sách các shop cần đồng bộ và thương hiệu (brand) tương ứng.
-2. `tiktok_tokens`: Lưu access_token và refresh_token mã hóa (hệ thống tự auto-refresh).
-3. `normalized_requests`: Dữ liệu thô TikTok đã được chuyển đổi thành chuẩn nội bộ (lưu cả đơn hàng, hoàn trả, khiếu nại).
-4. `lark_records`: Bảng map khóa đồng bộ `sync_key` với `record_id` trên Lark, phục vụ quá trình cập nhật (upsert).
-5. `sync_logs`: Lưu toàn bộ lịch sử (log) của quá trình tạo mới, cập nhật, skip hoặc lỗi.
-6. `webhook_events`: Lưu lại payload raw của mọi webhook TikTok gửi sang để kiểm tra (audit) khi cần thiết.
+Dưới đây là giải phẫu chi tiết cấu trúc mã nguồn trong thư mục \`src/\`, giúp các kỹ sư nắm bắt nhanh vị trí và chức năng của từng file để dễ dàng bảo trì và mở rộng:
+
+### 🌟 Thư mục Root (\`src/\`)
+- \`main.ts\`: Điểm khởi chạy (Entry point) của ứng dụng NestJS. Thiết lập Port, Global Pipes, Filters.
+- \`app.module.ts\`: Module gốc, import tất cả các modules con của hệ thống (Prisma, Schedule, BullMQ, TikTok, Shopee, Sync...).
+- \`health.controller.ts\`: API endpoint \`/health\` để Docker hoặc Kubernetes ping kiểm tra trạng thái sống (Liveness Probe).
+
+### 🗂️ \`src/common/\` (Cấu hình dùng chung)
+- \`constants.ts\`: Lưu trữ tất cả các hằng số tĩnh của dự án (Tên Queue, Tên Job, Prefix Redis, Magic Strings).
+- \`prisma/prisma.service.ts\`: Wrapper của PrismaClient, chịu trách nhiệm kết nối và đóng gói các thao tác với PostgreSQL database.
+
+### 🗂️ \`src/modules/\` (Các Phân Hệ Nghiệp Vụ Chức Năng)
+
+#### 1. \`tiktok/\` (Giao tiếp với TikTok API)
+- \`tiktok-api.client.ts\`: Đóng gói (Wrapper) toàn bộ các lệnh gọi API sang TikTok (Lấy đơn, Lấy danh sách trả hàng, Refresh Token) với cơ chế Retry khi gặp HTTP 429.
+- \`tiktok-oauth.controller.ts\`: Xử lý luồng cấp quyền (OAuth 2.0) khi thêm Shop mới. Lưu trữ access_token và refresh_token.
+- \`tiktok-webhook.controller.ts\`: Điểm hứng (Endpoint) nhận Push Events Realtime từ TikTok (ORDER_STATUS_CHANGE).
+- \`tiktok-token.service.ts\`: Chạy Cronjob ngầm tự động làm mới Token trước khi chúng hết hạn.
+
+#### 2. \`shopee/\` (Giao tiếp với Shopee API)
+- Tương tự như cấu trúc của TikTok, đóng gói các luồng API, OAuth và Webhook chuyên biệt cho Shopee Open API v2.
+
+#### 3. \`sync/\` (Trái tim Hệ thống Đồng bộ)
+- \`normalizer.service.ts\`: Lớp chống tham nhũng dữ liệu (Anti-Corruption). Dịch payload thô phức tạp của TikTok/Shopee thành định dạng chuẩn chung \`NormalizedRequest\` của hệ thống.
+- \`status-mapper.service.ts\`: Từ điển ánh xạ trạng thái. Ví dụ: Dịch trạng thái \`IN_TRANSIT\` của Shopee thành \`Đang giao\` trên Lark.
+- \`sync-engine.service.ts\`: Core Engine nhận lệnh đồng bộ, xây dựng chuỗi Payload chuẩn xác để chuẩn bị bắn lên Lark. Ở đây có cơ chế bảo vệ (Preserve) dữ liệu người dùng không bị ghi đè.
+- \`sync-worker.ts\`: Consumer của BullMQ. Rút các task đồng bộ từ Queue ra xử lý lần lượt để chống sập Lark API (Rate limit) và ghi log kết quả vào DB.
+
+#### 4. \`failed-delivery/\` (Nghiệp vụ Giao Hàng Thất Bại)
+- \`failed-delivery.service.ts\`: Xử lý nghiệp vụ chuyên sâu dò tìm và bắt các đơn bị giao thất bại. Nhận diện chính xác qua \`cancel_initiator\` và \`cancel_reason\`.
+- \`failed-delivery.scheduler.ts\`: Cronjob tự động quét, chốt sổ ngày về kho hoặc cảnh báo các đơn Giao hàng thất bại bị treo quá hạn.
+
+#### 5. \`reconcile/\` (Đối soát dữ liệu)
+- \`reconcile.service.ts\`: Lớp chứa logic so khớp, tìm kiếm khoảng trống dữ liệu (Gaps). Có hàm kéo lùi dữ liệu lịch sử nhiều ngày (Backfill) và quét đơn lỗi.
+- \`reconcile.scheduler.ts\`: Chứa 4 Cronjob cốt lõi (10 phút, 30 phút, Cuối ngày, Cuối tuần) liên tục gọi API hệ thống để chắp vá các webhook bị rớt (Missed Webhooks).
+
+#### 6. \`lark/\` (Tương tác Lark Base)
+- \`lark-api.client.ts\`: Giao tiếp với Lark Open API (Lấy Tenant Token, Fetch/Update/Create Record).
+- \`lark-record.service.ts\`: Quản lý bộ đệm (Mapping) \`lark_records\` nội bộ để biết đơn hàng này tương ứng với dòng nào, ID nào trên Lark.
+- \`lark-bot.service.ts\`: Xử lý bắn tin nhắn cảnh báo, báo cáo lỗi (Markdown format) vào các Group Chat CSKH qua Custom Bot Webhook.
+
+#### 7. \`jt-express/\` (Đơn vị vận chuyển J&T)
+- \`jt-express.client.ts\`: Bắt tay với J&T API để lấy vận đơn (Waybill) và trạng thái tracking realtime để xác nhận Ngày Về Kho cho các đơn chuyển hoàn.
+
+#### 8. \`admin/\` (Quản trị Hệ thống)
+- \`admin.controller.ts\`: Cung cấp các REST API cho nội bộ (hoặc Dashboard) để force-retry một đơn hàng bị lỗi, hoặc trigger thủ công tiến trình Reconcile từ ngày A đến ngày B.
+
+---
+
+*Tài liệu được bảo trì bởi Tech Team. Vui lòng cập nhật tài liệu này nếu có sự thay đổi lớn về Kiến trúc (Architecture) hoặc Schema Database.*

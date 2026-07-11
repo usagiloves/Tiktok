@@ -5,10 +5,13 @@ import { BullModule } from '@nestjs/bullmq';
 import { HttpModule } from '@nestjs/axios';
 
 import { TiktokModule } from './modules/tiktok/tiktok.module';
+import { ShopeeModule } from './modules/shopee/shopee.module';
 import { LarkModule } from './modules/lark/lark.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { ReconcileModule } from './modules/reconcile/reconcile.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { JtExpressModule } from './modules/jt-express/jt-express.module';
+import { FailedDeliveryModule } from './modules/failed-delivery/failed-delivery.module';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { HealthController } from './health.controller';
 
@@ -43,10 +46,13 @@ import { HealthController } from './health.controller';
 
     // Feature modules
     TiktokModule,
+    ShopeeModule,
     LarkModule,
     SyncModule,
     ReconcileModule,
     AdminModule,
+    JtExpressModule,
+    FailedDeliveryModule,
   ],
   controllers: [HealthController],
 })

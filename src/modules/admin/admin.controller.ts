@@ -4,10 +4,16 @@ import {
   Get,
   Body,
   Logger,
+  Param,
 } from '@nestjs/common';
 import { SyncEngineService } from '../sync/sync-engine.service';
 import { ReconcileService } from '../reconcile/reconcile.service';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { TiktokApiClient } from '../tiktok/tiktok-api.client';
+
+import { HttpService } from '@nestjs/axios';
+import { TiktokTokenService } from '../tiktok/tiktok-token.service';
+import * as crypto from 'crypto';
 
 @Controller('admin')
 export class AdminController {
@@ -17,7 +23,52 @@ export class AdminController {
     private readonly syncEngine: SyncEngineService,
     private readonly reconcileService: ReconcileService,
     private readonly prisma: PrismaService,
+    private readonly tiktokApi: TiktokApiClient,
   ) {}
+  @Get('test-order/:id')
+  async testOrder(@Param('id') orderId: string) {
+    const shop = await this.prisma.shop.findFirst({ where: { platform: 'TIKTOK', isActive: true } });
+    if (!shop) {
+      throw new Error('No active shop found');
+    }
+    
+    try {
+      const orderDetail = await this.tiktokApi.getOrderDetail(shop.shopId, shop.shopCipher || '', orderId);
+      return orderDetail;
+    } catch (e: any) {
+      return {
+        error: e.message,
+        response: e.response?.data
+      };
+    }
+  }
+
+  @Post('test-order/push/:id')
+  async pushTestOrder(@Param('id') orderId: string) {
+    const shop = await this.prisma.shop.findFirst({ where: { platform: 'TIKTOK', isActive: true } });
+    if (!shop) {
+      throw new Error('No active shop found');
+    }
+    
+    try {
+      const orderDetail = await this.tiktokApi.getOrderDetail(shop.shopId, shop.shopCipher || '', orderId);
+      if (orderDetail.orders && orderDetail.orders.length > 0) {
+        const order = orderDetail.orders[0];
+        // Flag for normalizer
+        order._is_failed_delivery = true; 
+        
+        await this.syncEngine.syncOrdersBatch([order], { shopId: shop.shopId, brand: shop.brand || 'Goodfit', shopCode: shop.shopCode || null }, 'MANUAL');
+        return { success: true, message: `Pushed order ${orderId} to LarkBase successfully.` };
+      } else {
+        return { success: false, message: 'Order not found from TikTok API' };
+      }
+    } catch (e: any) {
+      return {
+        error: e.message,
+        response: e.response?.data
+      };
+    }
+  }
 
   // ============================================
   // Manual Retry
@@ -92,6 +143,60 @@ export class AdminController {
     return { success: true, stats };
   }
 
+  /**
+   * POST /admin/reconcile/historical
+   * Quét bù (Backlog Sweep) toàn bộ đơn hàng và hoàn trả từ một mốc thời gian cho TẤT CẢ các shop active.
+   */
+  @Post('reconcile/historical')
+  async historicalSweep(@Body() body: { from: string }) {
+    this.logger.log(`📊 Manual Historical Sweep starting from ${body.from}...`);
+    
+    const fromTimestamp = Math.floor(new Date(body.from).getTime() / 1000);
+    const nowTimestamp = Math.floor(Date.now() / 1000);
+    
+    const shops = await this.prisma.shop.findMany({ where: { isActive: true } });
+    
+    const results = [];
+    
+    for (const shop of shops) {
+      this.logger.log(`Sweeping shop ${shop.shopName} (${shop.platform})`);
+      let orderStats, returnStats;
+      
+      if (shop.platform === 'TIKTOK') {
+        orderStats = await this.reconcileService.reconcileOrders(shop.shopId, fromTimestamp, nowTimestamp);
+        returnStats = await this.reconcileService.reconcileReturns(shop.shopId, fromTimestamp, nowTimestamp);
+      } else if (shop.platform === 'SHOPEE') {
+        // Shopee max update_time range is 15 days, so we split it into 15-day chunks
+        let currentTo = nowTimestamp;
+        let currentFrom = Math.max(fromTimestamp, currentTo - 15 * 24 * 60 * 60);
+        
+        orderStats = { total: 0, updated: 0, errors: 0 };
+        returnStats = { total: 0, updated: 0, errors: 0 };
+        
+        while (currentTo > fromTimestamp) {
+          const oStats = await this.reconcileService.reconcileShopeeOrders(shop.shopId, currentFrom, currentTo);
+          const rStats = await this.reconcileService.reconcileShopeeReturns(shop.shopId, currentFrom, currentTo);
+          
+          if (oStats) { orderStats.total += oStats.total; orderStats.updated += oStats.updated; orderStats.errors += oStats.errors; }
+          if (rStats) { returnStats.total += rStats.total; returnStats.updated += rStats.updated; returnStats.errors += rStats.errors; }
+          
+          currentTo = currentFrom;
+          currentFrom = Math.max(fromTimestamp, currentTo - 15 * 24 * 60 * 60);
+        }
+      }
+      
+      results.push({
+        shopId: shop.shopId,
+        platform: shop.platform,
+        orders: orderStats,
+        returns: returnStats
+      });
+    }
+    
+    this.logger.log(`✅ Historical Sweep completed.`);
+    return { success: true, results };
+  }
+
   // ============================================
   // Dashboard
   // ============================================
@@ -101,6 +206,70 @@ export class AdminController {
    * Dashboard sức khỏe hệ thống.
    */
   @Get('dashboard')
+  async dashboard() {
+    const activeShops = await this.prisma.shop.count({ where: { isActive: true } });
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const syncLogsCount = await this.prisma.syncLog.count({
+      where: {
+        createdAt: { gte: today }
+      }
+    });
+
+    return {
+      success: true,
+      data: {
+        activeShops,
+        syncLogsToday: syncLogsCount,
+        status: 'OK'
+      }
+    };
+  }
+
+  @Get('fix-ciphers')
+  async fixCiphers() {
+    const shops = await this.prisma.shop.findMany({ where: { platform: 'TIKTOK' } });
+    for (const shop of shops) {
+      if (!shop.shopCipher || shop.shopCipher === 'none') {
+        try {
+          const authData = await this.tiktokApi.getAuthorizedShops(shop.shopId);
+          if (authData && authData.shops) {
+            this.logger.log(`Raw auth shops for ${shop.shopId}: ${JSON.stringify(authData)}`);
+            const cipher = authData.shops[0].shop_cipher || authData.shops[0].cipher;
+            await this.prisma.shop.update({
+              where: { id: shop.id },
+              data: { shopCipher: cipher }
+            });
+            this.logger.log(`Updated cipher for ${shop.shopId}: ${cipher}`);
+          }
+        } catch (e: any) {
+          this.logger.error(`Failed to fix cipher for ${shop.shopId}: ${e.message}`);
+        }
+      }
+    }
+    return { success: true };
+  }
+
+  @Get('check-db')
+  async checkDb() {
+    const activeShops = await this.prisma.shop.count({ where: { isActive: true } });
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const syncsToday = await this.prisma.larkRecord.count({
+      where: { updatedAt: { gte: today } }
+    });
+    
+    // Check all shops
+    const allShops = await this.prisma.shop.findMany();
+
+    return {
+      activeShops,
+      syncsToday,
+      shops: allShops.map(s => ({ shopId: s.shopId, isActive: s.isActive, platform: s.platform, brand: s.brand }))
+    };
+  }
+
+  @Get('dashboard-stats')
   async getDashboard() {
     const now = new Date();
     const todayStart = new Date(now);

@@ -15,101 +15,120 @@ export class ReconcileScheduler {
   ) {}
 
   /**
-   * Mỗi 10 phút: Kéo đơn thay đổi trong 30 phút gần nhất.
-   * Overlap 20 phút để chống miss.
-   */
-  @Cron(CronExpression.EVERY_10_MINUTES)
-  async reconcileRecentOrders() {
-    this.logger.log('⏰ Cron: reconcileRecentOrders started');
-
-    const shops = await this.getActiveShops();
-
-    for (const shop of shops) {
-      const now = Math.floor(Date.now() / 1000);
-      const thirtyMinutesAgo = now - 30 * 60;
-
-      await this.reconcileService.reconcileOrders(
-        shop.shopId,
-        thirtyMinutesAgo,
-        now,
-      );
-    }
-  }
-
-  /**
-   * Mỗi 30 phút: Kéo return/refund/cancel thay đổi trong 2 giờ gần nhất.
+   * 1. Near Realtime: Mỗi 30 phút, quét 2 giờ gần nhất
    */
   @Cron('*/30 * * * *')
-  async reconcileRecentReturns() {
-    this.logger.log('⏰ Cron: reconcileRecentReturns started');
-
+  async reconcileNearRealtime() {
+    this.logger.log('⏰ Cron: reconcileNearRealtime started');
     const shops = await this.getActiveShops();
+    const stats = { total: 0, created: 0, updated: 0, failed: 0 };
 
     for (const shop of shops) {
       const now = Math.floor(Date.now() / 1000);
       const twoHoursAgo = now - 2 * 60 * 60;
 
-      await this.reconcileService.reconcileReturns(
-        shop.shopId,
-        twoHoursAgo,
-        now,
-      );
+      let oStats, rStats;
+      if (shop.platform === 'TIKTOK') {
+        rStats = await this.reconcileService.reconcileReturns(shop.shopId, twoHoursAgo, now);
+        oStats = await this.reconcileService.reconcileOrders(shop.shopId, twoHoursAgo, now);
+      } else if (shop.platform === 'SHOPEE') {
+        rStats = await this.reconcileService.reconcileShopeeReturns(shop.shopId, twoHoursAgo, now);
+        oStats = await this.reconcileService.reconcileShopeeOrders(shop.shopId, twoHoursAgo, now);
+      }
+
+      if (oStats) { stats.total += oStats.total; stats.created += oStats.created; stats.updated += oStats.updated; stats.failed += oStats.errors; }
+      if (rStats) { stats.total += rStats.total; stats.created += rStats.created; stats.updated += rStats.updated; stats.failed += rStats.errors; }
     }
+
+    await this.larkBot.sendSummary({
+      jobName: 'Near Realtime (2h)',
+      date: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+      totalSynced: stats.total,
+      totalCreated: stats.created,
+      totalUpdated: stats.updated,
+      totalFailed: stats.failed,
+    });
   }
 
   /**
-   * Mỗi ngày 02:00: Đối soát toàn bộ đơn 7 ngày gần nhất.
+   * 2. Daily Backfill: Mỗi ngày 02:00, quét 15 ngày gần nhất
    */
   @Cron('0 2 * * *')
-  async reconcileWeeklyOrders() {
-    this.logger.log('⏰ Cron: reconcileWeeklyOrders started');
-
+  async reconcileDailyBackfill() {
+    this.logger.log('⏰ Cron: reconcileDailyBackfill started');
     const shops = await this.getActiveShops();
+    const stats = { total: 0, created: 0, updated: 0, failed: 0 };
 
     for (const shop of shops) {
       const now = Math.floor(Date.now() / 1000);
-      const sevenDaysAgo = now - 7 * 24 * 60 * 60;
+      const fifteenDaysAgo = now - 15 * 24 * 60 * 60;
 
-      const stats = await this.reconcileService.reconcileOrders(
-        shop.shopId,
-        sevenDaysAgo,
-        now,
-      );
+      let oStats, rStats;
+      if (shop.platform === 'TIKTOK') {
+        rStats = await this.reconcileService.reconcileReturns(shop.shopId, fifteenDaysAgo, now);
+        oStats = await this.reconcileService.reconcileOrders(shop.shopId, fifteenDaysAgo, now);
+      } else if (shop.platform === 'SHOPEE') {
+        rStats = await this.reconcileService.reconcileShopeeReturns(shop.shopId, fifteenDaysAgo, now);
+        oStats = await this.reconcileService.reconcileShopeeOrders(shop.shopId, fifteenDaysAgo, now);
+      }
 
-      // Gửi báo cáo daily
-      const today = new Date().toLocaleDateString('vi-VN', {
-        timeZone: 'Asia/Ho_Chi_Minh',
-      });
-
-      await this.larkBot.sendSummary({
-        date: today,
-        totalSynced: stats.total,
-        totalCreated: stats.created,
-        totalUpdated: stats.updated,
-        totalFailed: stats.errors,
-      });
+      if (oStats) { stats.total += oStats.total; stats.created += oStats.created; stats.updated += oStats.updated; stats.failed += oStats.errors; }
+      if (rStats) { stats.total += rStats.total; stats.created += rStats.created; stats.updated += rStats.updated; stats.failed += rStats.errors; }
     }
+
+    await this.larkBot.sendSummary({
+      jobName: 'Daily Backfill (15 days)',
+      date: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+      totalSynced: stats.total,
+      totalCreated: stats.created,
+      totalUpdated: stats.updated,
+      totalFailed: stats.failed,
+    });
   }
 
   /**
-   * Mỗi tuần (Chủ nhật 03:00): Đối soát hoàn/trả 30 ngày.
+   * 3. Weekly Safety Sweep: Mỗi Chủ nhật 03:00, quét 30 ngày gần nhất
    */
   @Cron('0 3 * * 0')
-  async reconcileMonthlyReturns() {
-    this.logger.log('⏰ Cron: reconcileMonthlyReturns started');
-
+  async reconcileWeeklySafetySweep() {
+    this.logger.log('⏰ Cron: reconcileWeeklySafetySweep started');
     const shops = await this.getActiveShops();
+    const stats = { total: 0, created: 0, updated: 0, failed: 0 };
 
     for (const shop of shops) {
       const now = Math.floor(Date.now() / 1000);
       const thirtyDaysAgo = now - 30 * 24 * 60 * 60;
+      const fifteenDaysAgo = now - 15 * 24 * 60 * 60;
 
-      await this.reconcileService.reconcileReturns(
-        shop.shopId,
-        thirtyDaysAgo,
-        now,
-      );
+      if (shop.platform === 'TIKTOK') {
+        const rStats = await this.reconcileService.reconcileReturns(shop.shopId, thirtyDaysAgo, now);
+        const oStats = await this.reconcileService.reconcileOrders(shop.shopId, thirtyDaysAgo, now);
+        if (oStats) { stats.total += oStats.total; stats.created += oStats.created; stats.updated += oStats.updated; stats.failed += oStats.errors; }
+        if (rStats) { stats.total += rStats.total; stats.created += rStats.created; stats.updated += rStats.updated; stats.failed += rStats.errors; }
+      } else if (shop.platform === 'SHOPEE') {
+        // Shopee max update_time range is 15 days, so split into two chunks
+        const rStats1 = await this.reconcileService.reconcileShopeeReturns(shop.shopId, fifteenDaysAgo, now);
+        const oStats1 = await this.reconcileService.reconcileShopeeOrders(shop.shopId, fifteenDaysAgo, now);
+        
+        const rStats2 = await this.reconcileService.reconcileShopeeReturns(shop.shopId, thirtyDaysAgo, fifteenDaysAgo);
+        const oStats2 = await this.reconcileService.reconcileShopeeOrders(shop.shopId, thirtyDaysAgo, fifteenDaysAgo);
+
+        [oStats1, rStats1, oStats2, rStats2].forEach(s => {
+          if (s) {
+            stats.total += s.total; stats.created += s.created; stats.updated += s.updated; stats.failed += s.errors;
+          }
+        });
+      }
     }
+
+    await this.larkBot.sendSummary({
+      jobName: 'Weekly Safety Sweep (30 days)',
+      date: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+      totalSynced: stats.total,
+      totalCreated: stats.created,
+      totalUpdated: stats.updated,
+      totalFailed: stats.failed,
+    });
   }
 
   /**
@@ -117,7 +136,7 @@ export class ReconcileScheduler {
    */
   private async getActiveShops() {
     return this.prisma.shop.findMany({
-      where: { platform: 'TIKTOK', isActive: true },
+      where: { isActive: true },
     });
   }
 }
