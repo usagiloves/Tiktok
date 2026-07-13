@@ -106,7 +106,7 @@ export class TiktokTokenService {
 
     // Đồng thời tạo Shop nếu chưa có để hệ thống nhận diện
     await this.prisma.shop.upsert({
-      where: { shopId: result.shopId },
+      where: { platform_shopId: { platform: 'TIKTOK', shopId: result.shopId } },
       update: {
         shopName: result.shopName,
       },
