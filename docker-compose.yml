@@ -21,7 +21,7 @@ services:
         condition: service_healthy
     # Cấu hình lại các biến môi trường cho trùng với container name (trong Docker Network)
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/tiktok_lark_sync?schema=public
+      - NODE_ENV=production
       - REDIS_HOST=redis
       - REDIS_PORT=6379
 
