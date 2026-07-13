@@ -177,15 +177,16 @@ export class NormalizerService {
     let warehouseReceivedAt: Date | null = null;
     if (rawOrder._jt_warehouse_received_at) {
       warehouseReceivedAt = new Date(rawOrder._jt_warehouse_received_at as string);
+    } else if (rawOrder._is_failed_delivery && (rawOrder.order_status === 'COMPLETED' || rawOrder.status === 'COMPLETED')) {
+      const updateTimeMs = rawOrder.update_time ? Number(rawOrder.update_time) * 1000 : Date.now();
+      warehouseReceivedAt = new Date(updateTimeMs);
     }
 
     if (rawOrder._is_failed_delivery) {
       larkFields['Loại yêu cầu'] = 'Giao hàng thất bại';
       // Giai đoạn 3: Tích hợp logic J&T cho Đơn Giao Hàng Thất Bại
-      // Chưa có Ngày về kho -> Đang hoàn
-      // Đã có Ngày về kho   -> Cần kiểm tra
       if (warehouseReceivedAt) {
-        internalStatus = 'Cần kiểm tra';
+        internalStatus = 'Đã về kho';
       } else {
         internalStatus = 'Đang hoàn';
       }
@@ -411,6 +412,9 @@ export class NormalizerService {
     let warehouseReceivedAt: Date | null = null;
     if (rawOrder._jt_warehouse_received_at) {
       warehouseReceivedAt = new Date(rawOrder._jt_warehouse_received_at as string);
+    } else if (rawOrder._is_failed_delivery && (rawOrder.order_status === 'COMPLETED' || rawOrder.status === 'COMPLETED')) {
+      const updateTimeMs = rawOrder.update_time ? Number(rawOrder.update_time) * 1000 : Date.now();
+      warehouseReceivedAt = new Date(updateTimeMs);
     }
 
     if (rawOrder._is_failed_delivery) {
