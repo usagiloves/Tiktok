@@ -160,29 +160,31 @@ export class AdminController {
     
     for (const shop of shops) {
       this.logger.log(`Sweeping shop ${shop.shopName} (${shop.platform})`);
-      let orderStats, returnStats;
+      let orderStats = { total: 0, updated: 0, errors: 0 };
+      let returnStats = { total: 0, updated: 0, errors: 0 };
       
-      if (shop.platform === 'TIKTOK') {
-        orderStats = await this.reconcileService.reconcileOrders(shop.shopId, fromTimestamp, nowTimestamp);
-        returnStats = await this.reconcileService.reconcileReturns(shop.shopId, fromTimestamp, nowTimestamp);
-      } else if (shop.platform === 'SHOPEE') {
-        // Shopee max update_time range is 15 days, so we split it into 15-day chunks
-        let currentTo = nowTimestamp;
-        let currentFrom = Math.max(fromTimestamp, currentTo - 15 * 24 * 60 * 60);
-        
-        orderStats = { total: 0, updated: 0, errors: 0 };
-        returnStats = { total: 0, updated: 0, errors: 0 };
-        
-        while (currentTo > fromTimestamp) {
-          const oStats = await this.reconcileService.reconcileShopeeOrders(shop.shopId, currentFrom, currentTo);
-          const rStats = await this.reconcileService.reconcileShopeeReturns(shop.shopId, currentFrom, currentTo);
+      try {
+        if (shop.platform === 'TIKTOK') {
+          orderStats = await this.reconcileService.reconcileOrders(shop.shopId, fromTimestamp, nowTimestamp) || orderStats;
+          returnStats = await this.reconcileService.reconcileReturns(shop.shopId, fromTimestamp, nowTimestamp) || returnStats;
+        } else if (shop.platform === 'SHOPEE') {
+          // Shopee max update_time range is 15 days, so we split it into 15-day chunks
+          let currentTo = nowTimestamp;
+          let currentFrom = Math.max(fromTimestamp, currentTo - 15 * 24 * 60 * 60);
           
-          if (oStats) { orderStats.total += oStats.total; orderStats.updated += oStats.updated; orderStats.errors += oStats.errors; }
-          if (rStats) { returnStats.total += rStats.total; returnStats.updated += rStats.updated; returnStats.errors += rStats.errors; }
-          
-          currentTo = currentFrom;
-          currentFrom = Math.max(fromTimestamp, currentTo - 15 * 24 * 60 * 60);
+          while (currentTo > fromTimestamp) {
+            const oStats = await this.reconcileService.reconcileShopeeOrders(shop.shopId, currentFrom, currentTo);
+            const rStats = await this.reconcileService.reconcileShopeeReturns(shop.shopId, currentFrom, currentTo);
+            
+            if (oStats) { orderStats.total += oStats.total; orderStats.updated += oStats.updated; orderStats.errors += oStats.errors; }
+            if (rStats) { returnStats.total += rStats.total; returnStats.updated += rStats.updated; returnStats.errors += rStats.errors; }
+            
+            currentTo = currentFrom;
+            currentFrom = Math.max(fromTimestamp, currentTo - 15 * 24 * 60 * 60);
+          }
         }
+      } catch (err: any) {
+        this.logger.error(`❌ Failed to sweep shop ${shop.shopName}: ${err.message}`);
       }
       
       results.push({
