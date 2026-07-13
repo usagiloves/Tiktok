@@ -187,19 +187,28 @@ export class LarkRecordService {
     // 1.5 Tìm kiếm trên Lark những records không có trong DB (Self-heal)
     if (missingInDbPayloads.length > 0) {
       this.logger.log(`🔍 Searching ${missingInDbPayloads.length} records in Lark to prevent duplicates...`);
-      // Chia thành các mảng nhỏ nếu số lượng quá lớn (mặc dù batch limit là 500)
       const missingKeys = missingInDbPayloads.map(p => p.syncKey);
       
       try {
-        const searchResult = await this.larkApiClient.batchSearchRecords(
-          appToken, 
-          tableId, 
-          'sync_key', 
-          missingKeys
-        );
+        const chunkSize = 100;
+        const allSearchResults: any[] = [];
+        
+        for (let i = 0; i < missingKeys.length; i += chunkSize) {
+          const chunk = missingKeys.slice(i, i + chunkSize);
+          const searchResult = await this.larkApiClient.batchSearchRecords(
+            appToken, 
+            tableId, 
+            'sync_key', 
+            chunk
+          );
+          if (searchResult.items && searchResult.items.length > 0) {
+            allSearchResults.push(...searchResult.items);
+          }
+        }
 
-        if (searchResult.items && searchResult.items.length > 0) {
-          const larkFoundMap = new Map(searchResult.items.map(item => [String(item.fields.sync_key), item.record_id]));
+        if (allSearchResults.length > 0) {
+          this.logger.log(`Found ${allSearchResults.length} records in Lark that were missing in DB.`);
+          const larkFoundMap = new Map(allSearchResults.map(item => [String(item.fields.sync_key), item.record_id]));
           
           for (const payload of missingInDbPayloads) {
             const foundRecordId = larkFoundMap.get(payload.syncKey);

@@ -132,14 +132,12 @@ export class LarkApiClient {
           `${this.baseUrl}/bitable/v1/apps/${appToken}/tables/${tableId}/records/search${pageToken ? `?page_token=${pageToken}` : ''}`,
           {
             filter: {
-              conjunction: 'and',
-              conditions: [
-                {
-                  field_name: fieldName,
-                  operator: 'in',
-                  value: values,
-                },
-              ],
+              conjunction: 'or',
+              conditions: values.map(val => ({
+                field_name: fieldName,
+                operator: 'is',
+                value: [val],
+              })),
             },
             page_size: 500, // Max page size
           },
