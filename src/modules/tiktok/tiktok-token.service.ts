@@ -86,7 +86,7 @@ export class TiktokTokenService {
       ),
     };
 
-    // Lưu vào database (upsert)
+    // Lưu vào database (upsert) Token
     await this.prisma.tiktokToken.upsert({
       where: { shopId: result.shopId },
       update: {
@@ -104,7 +104,24 @@ export class TiktokTokenService {
       },
     });
 
-    this.logger.log(`💾 Token saved for shop: ${result.shopId}`);
+    // Đồng thời tạo Shop nếu chưa có để hệ thống nhận diện
+    await this.prisma.shop.upsert({
+      where: { shopId: result.shopId },
+      update: {
+        shopName: result.shopName,
+      },
+      create: {
+        shopId: result.shopId,
+        shopName: result.shopName,
+        platform: 'TIKTOK',
+        isActive: true,
+        brand: result.shopName,
+        shopCipher: 'none',
+        shopCode: result.shopName.substring(0, 5).toUpperCase(),
+      }
+    });
+
+    this.logger.log(`✅ Token and Shop saved for: ${result.shopId}`);
 
     return result;
   }
