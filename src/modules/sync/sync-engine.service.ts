@@ -215,11 +215,8 @@ export class SyncEngineService {
       );
 
       // Lọc orders trước SYNC_MIN_DATE
-      const minTimestamp = Math.floor(SYNC_MIN_DATE.getTime() / 1000);
-      const filtered = rawOrders.filter(raw => {
-        const createTime = Number(raw.order_create_time || raw.create_time || 0);
-        return createTime >= minTimestamp;
-      });
+      const filtered = rawOrders; // Bỏ qua lọc tạm thời
+
 
       if (filtered.length === 0) {
         this.logger.debug(`⏭️ [${traceId}] All ${rawOrders.length} orders are before SYNC_MIN_DATE (${SYNC_MIN_DATE.toISOString()}), skipping entirely`);
@@ -264,11 +261,8 @@ export class SyncEngineService {
     
     try {
       // Lọc return/refund trước SYNC_MIN_DATE
-      const minTimestamp = Math.floor(SYNC_MIN_DATE.getTime() / 1000);
-      const filtered = rawReturns.filter(raw => {
-        const createTime = Number(raw.order_create_time || raw.create_time || 0);
-        return createTime >= minTimestamp;
-      });
+      const filtered = rawReturns; // Bỏ qua lọc tạm thời
+
 
       if (filtered.length === 0) {
         this.logger.debug(`⏭️ [${traceId}] All ${rawReturns.length} returns are before SYNC_MIN_DATE (${SYNC_MIN_DATE.toISOString()}), skipping entirely`);
