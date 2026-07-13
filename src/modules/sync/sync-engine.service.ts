@@ -99,6 +99,14 @@ export class SyncEngineService {
     source: string,
     traceId: string,
   ): Promise<{ action: string; syncKey: string }> {
+    // 1. Lọc theo Business Rules (Chỉ lấy Giao hàng thất bại, Hoàn/Trả, Khiếu nại)
+    const allowedTypes = ['Giao hàng thất bại', 'Hoàn tiền', 'Đơn THHT', 'Khiếu nại'];
+    const requestTypeLabel = normalized.larkFields['Loại yêu cầu'] as string;
+    if (!allowedTypes.includes(requestTypeLabel)) {
+      this.logger.debug(`⏭️ [${traceId}] Skipping ${normalized.syncKey} - Loại yêu cầu "${requestTypeLabel}" không nằm trong danh sách cần lấy`);
+      return { action: SYNC_ACTIONS.SKIP, syncKey: normalized.syncKey };
+    }
+
     // 2. Chống update thừa
     const existingRequest = await this.prisma.normalizedRequest.findUnique({
       where: { syncKey: normalized.syncKey },
@@ -334,9 +342,17 @@ export class SyncEngineService {
        }
     }
 
-    // 2. Chống update thừa
+    // 2. Chống update thừa và Lọc Business Rules
+    const allowedTypes = ['Giao hàng thất bại', 'Hoàn tiền', 'Đơn THHT', 'Khiếu nại'];
     const toProcess: NormalizedData[] = [];
+    
     for (const normalized of normalizedList) {
+      const requestTypeLabel = normalized.larkFields['Loại yêu cầu'] as string;
+      if (!allowedTypes.includes(requestTypeLabel)) {
+          stats.skipped++;
+          continue; // Skip
+      }
+
       const existing = existingMap.get(normalized.syncKey);
       if (
         existing &&
