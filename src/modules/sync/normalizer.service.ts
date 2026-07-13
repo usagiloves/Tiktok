@@ -417,7 +417,7 @@ export class NormalizerService {
       larkFields['Loại yêu cầu'] = 'Giao hàng thất bại';
       // Giai đoạn 3: Tích hợp logic J&T cho Đơn Giao Hàng Thất Bại
       if (warehouseReceivedAt) {
-        internalStatus = 'Cần kiểm tra';
+        internalStatus = 'Đã về kho';
       } else {
         internalStatus = 'Đang hoàn';
       }
