@@ -43,8 +43,8 @@ conn.on('ready', async () => {
   
   conn.end();
 }).connect({
-  host: '<VPS_IP>',
+  host: '160.191.89.216',
   port: 22,
   username: 'root',
-  password: '<VPS_PASSWORD>'
+  password: 'Sunbox@891'
 });

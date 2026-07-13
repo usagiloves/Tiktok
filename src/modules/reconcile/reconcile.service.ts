@@ -122,8 +122,8 @@ export class ReconcileService {
               }
             }
 
-            // Sync TẤT CẢ orders (bảo toàn luồng cũ), các đơn thất bại đã được inject flag ở trên
-            const batchStats = await this.syncEngine.syncOrdersBatch(orders, { shopId: shop.shopId, brand, shopCode }, SYNC_SOURCES.CRON);
+            // Sync ONLY failedDeliveryOrders (khôi phục luồng chuẩn từ backup)
+            const batchStats = await this.syncEngine.syncOrdersBatch(failedDeliveryOrders, { shopId: shop.shopId, brand, shopCode }, SYNC_SOURCES.CRON);
             stats.total += batchStats.total;
             stats.created += batchStats.created;
             stats.updated += batchStats.updated;

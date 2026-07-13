@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function addCwellShop() {
-  const shopId = 'NHAP_MA_SHOP_CWELL_VAO_DAY'; // <-- BẠN THAY MÃ SHOP ID CỦA CWELL VÀO ĐÂY NHÉ
+  const shopId = 'VNLCLBWL3X'; // Đã thay mã Shop ID CWELL
   
   const shop = await prisma.shop.upsert({
     where: { platform_shopId: { platform: 'TIKTOK', shopId } },

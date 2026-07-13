@@ -122,7 +122,24 @@ export class SyncWorker extends WorkerHost {
       // Inject các cờ tùy chỉnh từ Failed Delivery Tracker (nếu có)
       if (isFailedDelivery) {
         order._is_failed_delivery = true;
+      } else if (!isHardCut) {
+        // Áp dụng logic chuẩn từ Reconcile: chặn toàn bộ đơn thường, chỉ nhận Giao hàng thất bại
+        const status = String(order.order_status || order.status || '');
+        const reason = String(order.cancel_reason || order.cancellation_reason || '').toUpperCase();
+        const initiator = String(order.cancellation_initiator || order.cancel_initiator || '').toUpperCase();
+
+        if (status === 'CANCELLED' && 
+            initiator !== 'BUYER' && !reason.includes('BUYER') &&
+            initiator !== 'SELLER' && !reason.includes('SELLER') &&
+            (initiator === 'LOGISTICS' || reason.includes('DELIVERY') || reason.includes('FAIL') || reason.includes('THẤT BẠI') || reason.includes('GIAO GÓI HÀNG') || (initiator === 'SYSTEM' && (reason.includes('GIAO') || reason.includes('DELIVERY'))))
+        ) {
+          order._is_failed_delivery = true;
+        } else {
+          this.logger.debug(`[Webhook] Skipping order ${orderId} - Not a Failed Delivery`);
+          continue;
+        }
       }
+
       if (warehouseReceivedAtMs) {
         order._jt_warehouse_received_at = warehouseReceivedAtMs;
       }
